@@ -29,14 +29,14 @@ impl Handler {
                         }
                         let (user_id, message) = message.split_once(":").unwrap();
                         
-                        let mut content: String = event.content.unwrap();
+                        let mut content: String = event.content.clone().unwrap();
                         if let Some(attachments) = event.attachments.as_ref() {
                             for attachment in attachments.iter() {
                                 content.push_str(&format!("\n{}", &attachment.url));
                             }
                         }
 
-                        let filter_result = filter_message(&self, guild_id, content.clone()).await;
+                        let filter_result = filter_message(&self, guild_id, event.content.unwrap().clone()).await;
 
                         match self.redis.set_message(
                             event.guild_id.unwrap().0 as i64,
