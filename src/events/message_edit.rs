@@ -10,6 +10,9 @@ impl Handler {
         if let None = event.guild_id {
             return;
         }
+        if let None = event.content {
+            return;
+        }
 
         let guild_id = event.guild_id.unwrap().0 as i64;
 
@@ -26,7 +29,7 @@ impl Handler {
                         }
                         let (user_id, message) = message.split_once(":").unwrap();
                         
-                        let mut content: String = message.to_string();
+                        let mut content: String = event.content.unwrap();
                         if let Some(attachments) = event.attachments.as_ref() {
                             for attachment in attachments.iter() {
                                 content.push_str(&format!("\n{}", &attachment.url));
