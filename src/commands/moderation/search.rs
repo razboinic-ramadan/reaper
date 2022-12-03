@@ -36,10 +36,6 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                 }
             }
 
-            if let Err(err) = defer(&ctx, &cmd, user_id == cmd.user.id.0 as i64).await {
-                return Err(err)
-            }
-
             let permission;
             if user_id == cmd.user.id.0 as i64 {
                 if expired {
@@ -155,7 +151,7 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                             if !action.active {
                                 message_content.push_str(" *(Expired)*");
                             }
-                            message_content.push_str(&format!("\n{}\n\t*Issued by:* <@{}>", action.reason, action.moderator_id));
+                            message_content.push_str(&format!("\n{}\n\t*Issued by:* <@{}>\n*Issued to:*{}", action.reason, action.moderator_id, action.user_id));
                             if let Some(expiry) = action.expiry {
                                 message_content.push_str(&format!("\n\t*Expires:* <t:{}:F>", expiry));
                             }
