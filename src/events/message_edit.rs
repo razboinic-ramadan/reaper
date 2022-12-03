@@ -22,12 +22,19 @@ impl Handler {
                         }
                         let (user_id, message) = message.split_once(":").unwrap();
                         
+                        let mut content: String = message.to_string();
+                        if let Some(attachments) = event.attachments.as_ref() {
+                            for attachment in attachments.iter() {
+                                content.push_str(&format!("\n{}", &attachment.url));
+                            }
+                        }
+
                         match self.redis.set_message(
                             event.guild_id.unwrap().0 as i64,
                             event.channel_id.0 as i64,
                             event.id.0 as i64,
                             event.author.as_ref().unwrap().id.0 as i64,
-                            event.content.as_ref().unwrap().clone()
+                            content.clone()
                         ).await {
                             Ok(_) => {},
                             Err(err) => {
@@ -47,7 +54,7 @@ impl Handler {
                             match ChannelId(logging_config.logging_channel as u64)
                             .send_message(ctx.http.as_ref(), |msg| {
                                 msg
-                                    .content(format!("Message edited in <#{}> by <@{}>:\n**Old:**\n`{}`\n**New:**\n`{}`", event.channel_id.0 as i64, user_id, message.replace("`", r"\`"), event.content.as_ref().unwrap().replace("`", r"\`")))
+                                    .content(format!("Message edited in <#{}> by <@{}>:\n**Old:**\n`{}`\n**New:**\n`{}`", event.channel_id.0 as i64, user_id, message.replace("`", r"\`"), content.replace("`", r"\`")))
                                     .allowed_mentions(|allowed_mentions| {
                                         allowed_mentions.empty_parse()
                                     })

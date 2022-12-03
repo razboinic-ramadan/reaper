@@ -13,12 +13,17 @@ impl Handler {
             return;
         }
 
+        let mut content: String = new_message.content.clone();
+        for attachment in new_message.attachments.iter() {
+            content.push_str(&format!("\n{}", &attachment.url));
+        }
+
         match self.redis.set_message(
             new_message.guild_id.unwrap().0 as i64,
             new_message.channel_id.0 as i64,
             new_message.id.0 as i64,
             new_message.author.id.0 as i64,
-            new_message.content.clone()
+            content
         ).await {
             Ok(_) => {},
             Err(err) => {
