@@ -7,6 +7,9 @@ use crate::{Handler, commands::{structs::CommandError, utils::messages::{send_me
 pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInteraction) -> Result<(), CommandError> {
     match cmd.data.options[0].name.as_str() {
         "user" => {
+            if let Err(err) = defer(&ctx, &cmd, false).await {
+                return Err(err)
+            }
             let mut user_id: i64 = cmd.user.id.0 as i64;
             let mut expired = false;
 
@@ -114,6 +117,9 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
             }
         },
         "action" => {
+            if let Err(err) = defer(&ctx, &cmd, true).await {
+                return Err(err)
+            }
             match handler.has_permission(&ctx, &cmd.member.as_ref().unwrap(), Permissions::ModerationSearchUuid).await {
                 Ok(has_permission) => {
                     if !has_permission {
