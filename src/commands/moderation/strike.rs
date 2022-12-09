@@ -16,6 +16,14 @@ impl Handler {
                 });
             }
         };
+        let mut strike_duration = duration;
+        let mut default_strike_string = "".to_string();
+        if let Some(mod_config) = &guild.config.moderation {
+            default_strike_string = mod_config.default_strike_duration.to_owned();
+        }
+        if let None = strike_duration {
+            strike_duration = Some(Duration::new(default_strike_string.to_owned()));
+        }
 
         match self.mongo.get_actions_for_user(user_id, guild_id).await {
             Ok(actions) => {
@@ -31,7 +39,7 @@ impl Handler {
                             ActionType::Mute => {
                                 let duration = match strike_escalation.duration.as_ref() {
                                     Some(duration) => Duration::new(duration.to_owned()),
-                                    None => Duration::new("".to_string())
+                                    None => Duration::new(default_strike_string.to_owned())
                                 };
                                 match self.mute(ctx, guild_id, user_id, format!("Strike escalation ({})", strikes), None, Some(duration)).await {
                                     Ok(action) => {
@@ -92,7 +100,7 @@ impl Handler {
             Some(id) => id,
             None => ctx.cache.current_user().id.0 as i64
         };
-        match self.mongo.add_action_to_user(user_id, guild_id, ActionType::Strike, reason, mod_id, duration).await {
+        match self.mongo.add_action_to_user(user_id, guild_id, ActionType::Strike, reason, mod_id, strike_duration).await {
             Ok(action) => {
                 self.log_action(&ctx, action.guild_id, &action).await;
                 Ok(action)
@@ -163,6 +171,21 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                 }
             },
             _ => warn!("Option type {:?} not handled", option.kind)
+        }
+    }
+
+    if let None = duration {
+        let guild = match handler.mongo.get_guild(cmd.guild_id.unwrap().0 as i64).await {
+            Ok(guild) => Some(guild),
+            Err(err) => {
+                warn!("Guild configuration could not be found for guild {}. Failed with error: {}", cmd.guild_id.unwrap().0, err);
+                None
+            }
+        };
+        if let Some(guild) = guild {
+            if let Some(mod_config) = guild.config.moderation {
+                duration = Some(Duration::new(mod_config.default_strike_duration));
+            }
         }
     }
 
