@@ -121,8 +121,13 @@ impl Handler {
             },
             ActionType::Mute => {
                 message_content.push_str(&format!("<@{}> has been muted by <@{}>", action.user_id, action.moderator_id));
-                message_content.push_str(&format!(" until <t:{}:F>", action.expiry.unwrap()));
+                if let Some(duration) = &action.expiry {
+                    message_content.push_str(&format!(" until <t:{}:F>", duration));
+                }
                 message_content.push_str(&format!(" for `{}`", action.reason));
+                if let None = action.expiry {
+                    message_content.push_str(&format!("\n*This mute will not expiry by default, please notify <@179292162037514241>*"))
+                }
             },
             ActionType::Kick => {
                 message_content.push_str(&format!("<@{}> has been kicked by <@{}>", action.user_id, action.moderator_id));
