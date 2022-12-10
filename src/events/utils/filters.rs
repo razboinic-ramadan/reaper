@@ -38,13 +38,13 @@ pub async fn filter_message(handler: &Handler, guild_id: i64, message_content: S
         }
 
         if let Some(strike_reason) = strike_reason {
-            return Some((strike_reason, moderation_config.default_strike_duration));
+            Some((strike_reason, moderation_config.default_strike_duration))
         }
         else {
-            return None;
+            None
         }
     }
     else {
-        return None;
+        None
     }
 }

@@ -66,9 +66,9 @@ impl AsRef<Permissions> for Permissions {
     }
 }
 
-impl Into<Bson> for Permissions {
-    fn into(self) -> Bson {
-        Bson::String(self.to_string())
+impl From<Permissions> for Bson {
+    fn from(p: Permissions) -> Self {
+        Bson::String(p.to_string())
     }
 }
 

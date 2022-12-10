@@ -25,10 +25,10 @@ impl Redis {
             Ok(client) => Ok( Redis {client} ),
             Err(err) => {
                 error!("Attempted to create a client. Failed with error: {}", err);
-                return Err(structs::RedisError {
+                Err(structs::RedisError {
                     message: "Failed to create a client".to_string(),
                     redis_error: Some(err)
-                });
+                })
             }
         }
     }
@@ -43,19 +43,19 @@ impl Redis {
                     },
                     Err(err) => {
                         error!("Failed to get message. Failed with error: {}", err);
-                        return Err(structs::RedisError {
+                        Err(structs::RedisError {
                             message: "Failed to get message".to_string(),
                             redis_error: Some(err)
-                        });
+                        })
                     }
                 }
             },
             Err(err) => {
                 error!("Failed to get a connection. Failed with error: {}", err);
-                return Err(structs::RedisError {
+                Err(structs::RedisError {
                     message: "Failed to get a connection".to_string(),
                     redis_error: Some(err)
-                });
+                })
             }
         }
     }
@@ -65,22 +65,22 @@ impl Redis {
         match self.client.get_async_connection().await {
             Ok(mut connection) => {
                 match connection.set_ex(key.clone(), format!("{}:{}", user_id, content), 603800).await {
-                    Ok(message) => return Ok(message),
+                    Ok(message) => Ok(message),
                     Err(err) => {
                         error!("Failed to set message {}. Failed with error: {}", key, err);
-                        return Err(structs::RedisError {
+                        Err(structs::RedisError {
                             message: format!("Failed to set message {}", key),
                             redis_error: Some(err)
-                        });
+                        })
                     }
                 }
             },
             Err(err) => {
                 error!("Failed to get a connection. Failed with error: {}", err);
-                return Err(structs::RedisError {
+                Err(structs::RedisError {
                     message: "Failed to get a connection".to_string(),
                     redis_error: Some(err)
-                });
+                })
             }
         }
     }
@@ -90,22 +90,22 @@ impl Redis {
         match self.client.get_async_connection().await {
             Ok(mut connection) => {
                 match connection.del(key.clone()).await {
-                    Ok(()) => return Ok(()),
+                    Ok(()) => Ok(()),
                     Err(err) => {
                         error!("Failed to delete message {}. Failed with error: {}", key, err);
-                        return Err(structs::RedisError {
+                        Err(structs::RedisError {
                             message: format!("Failed to delete message {}", key),
                             redis_error: Some(err)
-                        });
+                        })
                     }
                 }
             },
             Err(err) => {
                 error!("Failed to get a connection. Failed with error: {}", err);
-                return Err(structs::RedisError {
+                Err(structs::RedisError {
                     message: "Failed to get a connection".to_string(),
                     redis_error: Some(err)
-                });
+                })
             }
         }
     }

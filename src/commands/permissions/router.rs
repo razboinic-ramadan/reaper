@@ -5,17 +5,17 @@ use crate::{Handler, commands::structs::CommandError, commands::permissions, mon
 pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInteraction) -> Result<(), CommandError> {
     match cmd.data.options[0].name.as_str() {
         "add" => {
-            match handler.has_permission(&ctx, cmd.member.as_ref().unwrap(), Permissions::PermissionsAdd).await {
+            match handler.has_permission(ctx, cmd.member.as_ref().unwrap(), Permissions::PermissionsAdd).await {
                 Ok(has_permission) => {
                     if has_permission {
-                        return permissions::add::user_run(handler, ctx, cmd).await
+                        permissions::add::user_run(handler, ctx, cmd).await
                     }
                     else {
-                        return handler.missing_permissions(&ctx, &cmd, Permissions::PermissionsAdd).await
+                        handler.missing_permissions(ctx, cmd, Permissions::PermissionsAdd).await
                     }
                 },
                 Err(err) => {
-                    return Err(CommandError{
+                    Err(CommandError{
                         message: format!("Permissions could not be successfully checked. Failed with error: {}", err),
                         command_error: None
                     })
@@ -24,17 +24,17 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
             
         },
         "list" => {
-            match handler.has_permission(&ctx, cmd.member.as_ref().unwrap(), Permissions::PermissionsList).await {
+            match handler.has_permission(ctx, cmd.member.as_ref().unwrap(), Permissions::PermissionsList).await {
                 Ok(has_permission) => {
                     if has_permission {
-                        return permissions::list::run(ctx, cmd).await
+                        permissions::list::run(ctx, cmd).await
                     }
                     else {
-                        return handler.missing_permissions(&ctx, &cmd, Permissions::PermissionsList).await
+                        handler.missing_permissions(ctx, cmd, Permissions::PermissionsList).await
                     }
                 },
                 Err(err) => {
-                    return Err(CommandError{
+                    Err(CommandError{
                         message: format!("Permissions could not be successfully checked. Failed with error: {}", err),
                         command_error: None
                     })
@@ -42,17 +42,17 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
             }
         },
         "remove" => {
-            match handler.has_permission(&ctx, cmd.member.as_ref().unwrap(), Permissions::PermissionsRemove).await {
+            match handler.has_permission(ctx, cmd.member.as_ref().unwrap(), Permissions::PermissionsRemove).await {
                 Ok(has_permission) => {
                     if has_permission {
-                        return permissions::remove::user_run(handler, ctx, cmd).await
+                        permissions::remove::user_run(handler, ctx, cmd).await
                     }
                     else {
-                        return handler.missing_permissions(&ctx, &cmd, Permissions::PermissionsRemove).await
+                        handler.missing_permissions(ctx, cmd, Permissions::PermissionsRemove).await
                     }
                 },
                 Err(err) => {
-                    return Err(CommandError{
+                    Err(CommandError{
                         message: format!("Permissions could not be successfully checked. Failed with error: {}", err),
                         command_error: None
                     })
@@ -60,17 +60,17 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
             }
         },
         "view" => {
-            match handler.has_permission(&ctx, cmd.member.as_ref().unwrap(), Permissions::PermissionsView).await {
+            match handler.has_permission(ctx, cmd.member.as_ref().unwrap(), Permissions::PermissionsView).await {
                 Ok(has_permission) => {
                     if has_permission {
-                        return permissions::view::user_run(handler, ctx, cmd).await
+                        permissions::view::user_run(handler, ctx, cmd).await
                     }
                     else {
-                        return handler.missing_permissions(&ctx, &cmd, Permissions::PermissionsView).await
+                        handler.missing_permissions(ctx, cmd, Permissions::PermissionsView).await
                     }
                 },
                 Err(err) => {
-                    return Err(CommandError{
+                    Err(CommandError{
                         message: format!("Permissions could not be successfully checked. Failed with error: {}", err),
                         command_error: None
                     })
@@ -80,17 +80,17 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
         "role" => {
             match cmd.data.options[0].options[0].name.as_str() {
                 "add" => {
-                    match handler.has_permission(&ctx, cmd.member.as_ref().unwrap(), Permissions::PermissionsAdd).await {
+                    match handler.has_permission(ctx, cmd.member.as_ref().unwrap(), Permissions::PermissionsAdd).await {
                         Ok(has_permission) => {
                             if has_permission {
-                                return permissions::add::role_run(handler, ctx, cmd).await
+                                permissions::add::role_run(handler, ctx, cmd).await
                             }
                             else {
-                                return handler.missing_permissions(&ctx, &cmd, Permissions::PermissionsAdd).await
+                                handler.missing_permissions(ctx, cmd, Permissions::PermissionsAdd).await
                             }
                         },
                         Err(err) => {
-                            return Err(CommandError{
+                            Err(CommandError{
                                 message: format!("Permissions could not be successfully checked. Failed with error: {}", err),
                                 command_error: None
                             })
@@ -98,17 +98,17 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                     }
                 },
                 "remove" => {
-                    match handler.has_permission(&ctx, cmd.member.as_ref().unwrap(), Permissions::PermissionsRemove).await {
+                    match handler.has_permission(ctx, cmd.member.as_ref().unwrap(), Permissions::PermissionsRemove).await {
                         Ok(has_permission) => {
                             if has_permission {
-                                return permissions::remove::role_run(handler, ctx, cmd).await
+                                permissions::remove::role_run(handler, ctx, cmd).await
                             }
                             else {
-                                return handler.missing_permissions(&ctx, &cmd, Permissions::PermissionsRemove).await
+                                handler.missing_permissions(ctx, cmd, Permissions::PermissionsRemove).await
                             }
                         },
                         Err(err) => {
-                            return Err(CommandError{
+                            Err(CommandError{
                                 message: format!("Permissions could not be successfully checked. Failed with error: {}", err),
                                 command_error: None
                             })
@@ -116,17 +116,17 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                     }
                 },
                 "view" => {
-                    match handler.has_permission(&ctx, cmd.member.as_ref().unwrap(), Permissions::PermissionsView).await {
+                    match handler.has_permission(ctx, cmd.member.as_ref().unwrap(), Permissions::PermissionsView).await {
                         Ok(has_permission) => {
                             if has_permission {
-                                return permissions::view::role_run(handler, ctx, cmd).await
+                                permissions::view::role_run(handler, ctx, cmd).await
                             }
                             else {
-                                return handler.missing_permissions(&ctx, &cmd, Permissions::PermissionsView).await
+                                handler.missing_permissions(ctx, cmd, Permissions::PermissionsView).await
                             }
                         },
                         Err(err) => {
-                            return Err(CommandError{
+                            Err(CommandError{
                                 message: format!("Permissions could not be successfully checked. Failed with error: {}", err),
                                 command_error: None
                             })

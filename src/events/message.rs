@@ -7,7 +7,7 @@ use super::utils::filters::filter_message;
 
 impl Handler {
     pub async fn on_message(&self, ctx: &Context, new_message: &Message) {
-        if let None = new_message.guild_id {
+        if new_message.guild_id.is_none() {
             return;
         }
         if new_message.author.bot {
@@ -22,7 +22,7 @@ impl Handler {
         }
 
         match self.redis.set_message(
-            guild_id.clone(),
+            guild_id,
             new_message.channel_id.0 as i64,
             new_message.id.0 as i64,
             new_message.author.id.0 as i64,
@@ -34,11 +34,11 @@ impl Handler {
             }
         }
 
-        let filter_result = filter_message(&self, guild_id, content).await;
+        let filter_result = filter_message(self, guild_id, content).await;
 
         if let Some(filter_result) = filter_result {
             let mut user = ctx.cache.user(new_message.author.id.0);
-            if let None = user {
+            if user.is_none() {
                 user = match ctx.http.get_user(new_message.author.id.0).await {
                     Ok(user) => Some(user),
                     Err(err) => {
@@ -63,7 +63,7 @@ impl Handler {
             }
             
             match self.strike(
-                &ctx,
+                ctx,
                 new_message.guild_id.unwrap().0 as i64,
                 new_message.author.id.0 as i64,
                 filter_result.0,
@@ -78,7 +78,7 @@ impl Handler {
                 },
                 Err(err) => {
                     error!("Failed to strike user {} in guild {}. Failed with error: {}", new_message.author.id.0, guild_id, err);
-                    return;
+                    
                 }
             }
         }

@@ -29,7 +29,7 @@ pub async fn send_message(ctx: &Context, cmd: &ApplicationCommandInteraction, co
     }).await {
         Ok(_) => Ok(()),
         Err(err) => {
-            return Err(CommandError {
+            Err(CommandError {
                 message: "Could not send message".to_string(),
                 command_error: Some(err)
             })

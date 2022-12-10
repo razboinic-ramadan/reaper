@@ -29,36 +29,34 @@ impl Handler {
                                 }
                             }
                         }
-                        return Ok(false);
+                        Ok(false)
                     },
                     Err(err) => {
                         error!("Failed to get actions for user. Failed with error: {}", err);
-                        return Err(CommandError {
+                        Err(CommandError {
                             message: "Failed to get actions for user".to_string(),
                             command_error: None
-                        });
+                        })
                     }
                 }
             },
             Err(err) => {
                 error!("Failed to unban user. Failed with error: {}", err);
-                return Err(CommandError {
+                Err(CommandError {
                     message: "Failed to unban user".to_string(),
                     command_error: None
-                });
+                })
             }
         }
     }
 }
 
 pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInteraction) -> Result<(), CommandError> {
-    if let Err(err) = defer(&ctx, &cmd, false).await {
-        return Err(err)
-    }
-    match handler.has_permission(&ctx, &cmd.member.as_ref().unwrap(), Permissions::ModerationUnban).await {
+    defer(ctx, cmd, false).await?;
+    match handler.has_permission(ctx, cmd.member.as_ref().unwrap(), Permissions::ModerationUnban).await {
         Ok(has_permission) => {
             if !has_permission {
-                return handler.missing_permissions(&ctx, &cmd, Permissions::ModerationUnban).await
+                return handler.missing_permissions(ctx, cmd, Permissions::ModerationUnban).await
             }
         },
         Err(err) => {
@@ -70,11 +68,11 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
         }
     }
 
-    let user_id = match Value::to_string(&cmd.data.options[0].value.clone().unwrap()).replace("\"", "").parse::<i64>() {
+    let user_id = match Value::to_string(&cmd.data.options[0].value.clone().unwrap()).replace('\"', "").parse::<i64>() {
         Ok(id) => {
             if id == cmd.user.id.0 as i64 {
                 warn!("User {} in guild {} tried to unban themselves", cmd.user.id.0, cmd.guild_id.unwrap().0);
-                return send_message(&ctx, &cmd, "You cannot unban yourself".to_string()).await;
+                return send_message(ctx, cmd, "You cannot unban yourself".to_string()).await;
             }
             id as u64
         },
@@ -88,7 +86,7 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
     };
     
     match handler.unban(
-        &ctx,
+        ctx,
         cmd.guild_id.unwrap().0 as i64,
         user_id as i64,
         Some(cmd.user.id.0 as i64)
@@ -115,17 +113,17 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                         }
                     }
                 }
-                send_message(&ctx, &cmd, format!("Unbanned <@{}>", user_id)).await
+                send_message(ctx, cmd, format!("Unbanned <@{}>", user_id)).await
             } else {
-                send_message(&ctx, &cmd, format!("Failed to unban <@{}>", user_id)).await
+                send_message(ctx, cmd, format!("Failed to unban <@{}>", user_id)).await
             }
         },
         Err(err) => {
             error!("Failed to unban user. Failed with error: {}", err);
-            return Err(CommandError {
+            Err(CommandError {
                 message: "Failed to unban user".to_string(),
                 command_error: None
-            });
+            })
         }
     }
 }

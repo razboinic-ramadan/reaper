@@ -4,13 +4,11 @@ use tracing::error;
 use crate::{Handler, commands::{structs::CommandError, utils::messages::{send_message, defer}}, mongo::structs::Permissions};
 
 pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInteraction) -> Result<(), CommandError> {
-    if let Err(err) = defer(&ctx, &cmd, false).await {
-        return Err(err)
-    }
-    match handler.has_permission(&ctx, &cmd.member.as_ref().unwrap(), Permissions::ModerationExpire).await {
+    defer(ctx, cmd, false).await?;
+    match handler.has_permission(ctx, cmd.member.as_ref().unwrap(), Permissions::ModerationExpire).await {
         Ok(has_permission) => {
             if !has_permission {
-                return handler.missing_permissions(&ctx, &cmd, Permissions::ModerationExpire).await
+                return handler.missing_permissions(ctx, cmd, Permissions::ModerationExpire).await
             }
         },
         Err(err) => {
@@ -45,14 +43,14 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                     }
                 }
             }
-            return send_message(&ctx, &cmd, format!("Action with UUID `{}` successfully expired!", uuid)).await;
+            send_message(ctx, cmd, format!("Action with UUID `{}` successfully expired!", uuid)).await
         },
         Err(err) => {
             error!("Failed to expire action. Failed with error: {}", err);
-            return Err(CommandError {
+            Err(CommandError {
                 message: "Failed to expire action".to_string(),
                 command_error: None
-            });
+            })
         }
     }
 }

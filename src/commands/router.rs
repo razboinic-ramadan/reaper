@@ -8,18 +8,18 @@ impl Handler {
     pub async fn on_command(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::ApplicationCommand(command) = interaction {
             let command_result: Result<(), CommandError> = match command.data.name.as_str() {
-                "permissions" => commands::permissions::router::run(&self, &ctx, &command).await,
-                "strike" => commands::moderation::strike::run(&self, &ctx, &command).await,
-                "search" => commands::moderation::search::run(&self, &ctx, &command).await,
-                "mute" => commands::moderation::mute::run(&self, &ctx, &command).await,
-                "unmute" => commands::moderation::unmute::run(&self, &ctx, &command).await,
-                "kick" => commands::moderation::kick::run(&self, &ctx, &command).await,
-                "ban" => commands::moderation::ban::run(&self, &ctx, &command).await,
-                "unban" => commands::moderation::unban::run(&self, &ctx, &command).await,
-                "remove" => commands::moderation::remove::run(&self, &ctx, &command).await,
-                "expire" => commands::moderation::expire::run(&self, &ctx, &command).await,
-                "duration" => commands::moderation::duration::run(&self, &ctx, &command).await,
-                "reason" => commands::moderation::reason::run(&self, &ctx, &command).await,
+                "permissions" => commands::permissions::router::run(self, &ctx, &command).await,
+                "strike" => commands::moderation::strike::run(self, &ctx, &command).await,
+                "search" => commands::moderation::search::run(self, &ctx, &command).await,
+                "mute" => commands::moderation::mute::run(self, &ctx, &command).await,
+                "unmute" => commands::moderation::unmute::run(self, &ctx, &command).await,
+                "kick" => commands::moderation::kick::run(self, &ctx, &command).await,
+                "ban" => commands::moderation::ban::run(self, &ctx, &command).await,
+                "unban" => commands::moderation::unban::run(self, &ctx, &command).await,
+                "remove" => commands::moderation::remove::run(self, &ctx, &command).await,
+                "expire" => commands::moderation::expire::run(self, &ctx, &command).await,
+                "duration" => commands::moderation::duration::run(self, &ctx, &command).await,
+                "reason" => commands::moderation::reason::run(self, &ctx, &command).await,
                 _ => Err(CommandError {
                     message: "Command not found".to_string(),
                     command_error: None
@@ -43,7 +43,7 @@ impl Handler {
     }
 
     pub async fn has_permission(&self, ctx: &Context, member: &Member, permission: Permissions) -> Result<bool, CommandError> {
-        let guild = match guild_id_to_guild(&ctx, member.guild_id.0 as i64).await {
+        let guild = match guild_id_to_guild(ctx, member.guild_id.0 as i64).await {
             Ok(guild) => guild,
             Err(_) => return Err(CommandError {
                 message: format!("Failed to get guild with id {}", member.guild_id.0),
@@ -125,8 +125,8 @@ impl Handler {
                     message_content.push_str(&format!(" until <t:{}:F>", duration));
                 }
                 message_content.push_str(&format!(" for `{}`", action.reason));
-                if let None = action.expiry {
-                    message_content.push_str(&format!("\n*This mute will not expiry by default, please notify <@179292162037514241>*"))
+                if action.expiry.is_none() {
+                    message_content.push_str("\n*This mute will not expiry by default, please notify <@179292162037514241>*")
                 }
             },
             ActionType::Kick => {
@@ -142,7 +142,7 @@ impl Handler {
             },
             _ => {}
         }
-        message_content.push_str(&format!("\nUUID: `{}`", action.uuid.to_string()));
+        message_content.push_str(&format!("\nUUID: `{}`", action.uuid));
 
         if let Some(logging_config) = guild.config.logging {
             match ChannelId(logging_config.logging_channel as u64).send_message(&ctx.http, |message| {

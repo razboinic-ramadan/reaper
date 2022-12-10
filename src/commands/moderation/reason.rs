@@ -4,13 +4,11 @@ use tracing::error;
 use crate::{Handler, commands::{structs::CommandError, utils::messages::{send_message, defer}}, mongo::structs::Permissions};
 
 pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInteraction) -> Result<(), CommandError> {
-    if let Err(err) = defer(&ctx, &cmd, true).await {
-        return Err(err)
-    }
-    match handler.has_permission(&ctx, &cmd.member.as_ref().unwrap(), Permissions::ModerationReason).await {
+    defer(ctx, cmd, true).await?;
+    match handler.has_permission(ctx, cmd.member.as_ref().unwrap(), Permissions::ModerationReason).await {
         Ok(has_permission) => {
             if !has_permission {
-                return handler.missing_permissions(&ctx, &cmd, Permissions::ModerationReason).await
+                return handler.missing_permissions(ctx, cmd, Permissions::ModerationReason).await
             }
         },
         Err(err) => {
@@ -37,14 +35,14 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
         }
     }
 
-    if let None = uuid {
+    if uuid.is_none() {
         uuid = match handler.mongo.get_recent_mod_action(cmd.guild_id.unwrap().0 as i64, cmd.user.id.0 as i64).await {
             Ok(action) => {
                 if let Some(action) = action {
                     Some(action.uuid.to_string())
                 }
                 else {
-                    return send_message(&ctx, &cmd, "Since you have no recent actions, you will need to specify a UUID".to_string()).await;
+                    return send_message(ctx, cmd, "Since you have no recent actions, you will need to specify a UUID".to_string()).await;
                 }
             },
             Err(err) => {
@@ -80,18 +78,18 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                         }
                     }
                 }
-                return send_message(&ctx, &cmd, format!("Updated action with UUID `{}` to have a reason to `{}`", action.uuid, reason.unwrap())).await;
+                send_message(ctx, cmd, format!("Updated action with UUID `{}` to have a reason to `{}`", action.uuid, reason.unwrap())).await
             }
             else {
-                return send_message(&ctx, &cmd, "The action with this ID does not exist".to_string()).await;
+                send_message(ctx, cmd, "The action with this ID does not exist".to_string()).await
             }
         },
         Err(err) => {
             error!("Failed to update action reason. Failed with error: {}", err);
-            return Err(CommandError {
+            Err(CommandError {
                 message: "Failed to update action reason".to_string(),
                 command_error: None
-            });
+            })
         }
     }
 }

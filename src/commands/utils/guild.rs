@@ -5,11 +5,11 @@ use crate::{commands::structs::CommandError, mongo::structs::{Permissions}, Hand
 use super::messages::send_message;
 
 pub async fn guild_id_to_guild(ctx: &Context, guild_id: i64) -> Result<PartialGuild, CommandError> {
-    let guild_id = GuildId{0: guild_id as u64};
+    let guild_id = GuildId(guild_id as u64);
     match guild_id.to_partial_guild(&ctx.http).await {
         Ok(guild) => Ok(guild),
         Err(_) => {
-            return Err(CommandError {
+            Err(CommandError {
                 message: "Could not get guild".to_string(),
                 command_error: None
             })
@@ -19,6 +19,6 @@ pub async fn guild_id_to_guild(ctx: &Context, guild_id: i64) -> Result<PartialGu
 
 impl Handler {
     pub async fn missing_permissions(&self, ctx: &Context, cmd: &ApplicationCommandInteraction, permission: Permissions) -> Result<(), CommandError> {
-        return send_message(&ctx, &cmd, format!("You are missing the `{}` permission to run this!", permission.to_string())).await
+        send_message(ctx, cmd, format!("You are missing the `{}` permission to run this!", permission.to_string())).await
     }
 }

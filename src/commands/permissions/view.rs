@@ -7,14 +7,12 @@ use tracing::{warn, error, info};
 use crate::{Handler, commands::{structs::CommandError, utils::{messages::{send_message, defer}, guild::guild_id_to_guild}}, mongo::structs::Permissions};
 
 pub async fn user_run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInteraction) -> Result<(), CommandError> {
-    if let Err(err) = defer(&ctx, &cmd, false).await {
-        return Err(err)
-    }
+    defer(ctx, cmd, false).await?;
     let mut user_id: Option<i64> = None;
 
     match cmd.data.options[0].options[0].kind {
         CommandOptionType::User => {
-            match Value::to_string(&cmd.data.options[0].options[0].value.clone().unwrap()).replace("\"", "").parse::<i64>() {
+            match Value::to_string(&cmd.data.options[0].options[0].value.clone().unwrap()).replace('\"', "").parse::<i64>() {
                 Ok(id) => user_id = Some(id),
                 Err(err) => {
                     error!("Failed to get an integer from the User value. Failed with error: {}", err);
@@ -28,7 +26,7 @@ pub async fn user_run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommand
         _ => warn!("Option type {:?} not handled", cmd.data.options[0].options[0].kind)
     }
 
-    let guild = match guild_id_to_guild(&ctx, cmd.guild_id.unwrap().0 as i64).await {
+    let guild = match guild_id_to_guild(ctx, cmd.guild_id.unwrap().0 as i64).await {
         Ok(guild) => guild,
         Err(_) => return Err(CommandError {
             message: format!("Failed to get guild with id {}", cmd.guild_id.unwrap().0),
@@ -37,16 +35,16 @@ pub async fn user_run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommand
     };
 
     if user_id.unwrap() == guild.owner_id.0 as i64 {
-        return send_message(&ctx, &cmd, format!("<@{}> is the server owner, so has all permissions", cmd.user.id.0)).await;
+        return send_message(ctx, cmd, format!("<@{}> is the server owner, so has all permissions", cmd.user.id.0)).await;
     }
 
-    let mut member: Option<Member> = ctx.cache.member(cmd.guild_id.unwrap(), UserId{0: user_id.unwrap() as u64});
-    if let None = member {
+    let mut member: Option<Member> = ctx.cache.member(cmd.guild_id.unwrap(), UserId(user_id.unwrap() as u64));
+    if member.is_none() {
         match ctx.http.get_member(cmd.guild_id.unwrap().0, user_id.unwrap() as u64).await {
             Ok(mbr) => {
                 if let Some(permission) = mbr.permissions {
                     if permission.contains(permissions::Permissions::ADMINISTRATOR) {
-                        return send_message(&ctx, &cmd, format!("<@{}> is a server administrator, so has all permissions", cmd.user.id.0)).await;
+                        return send_message(ctx, cmd, format!("<@{}> is a server administrator, so has all permissions", cmd.user.id.0)).await;
                     }
                 }
                 member = Some(mbr);
@@ -81,7 +79,7 @@ pub async fn user_run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommand
     }
     
     let mut user_roles = member.unwrap().roles.clone();
-    user_roles.push(RoleId{0: cmd.guild_id.unwrap().0});
+    user_roles.push(RoleId(cmd.guild_id.unwrap().0));
     let mut role_permissions: HashMap<Permissions, i64> = HashMap::new();
     for role in user_roles {
         match handler.mongo.get_role(
@@ -148,18 +146,16 @@ pub async fn user_run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommand
         }
     }
 
-    send_message(&ctx, &cmd, message_content).await
+    send_message(ctx, cmd, message_content).await
 }
 
 pub async fn role_run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInteraction) -> Result<(), CommandError> {
-    if let Err(err) = defer(&ctx, &cmd, false).await {
-        return Err(err)
-    }
+    defer(ctx, cmd, false).await?;
     let mut role_id: Option<i64> = None;
 
     match cmd.data.options[0].options[0].options[0].kind {
         CommandOptionType::Role => {
-            match Value::to_string(&cmd.data.options[0].options[0].options[0].value.clone().unwrap()).replace("\"", "").parse::<i64>() {
+            match Value::to_string(&cmd.data.options[0].options[0].options[0].value.clone().unwrap()).replace('\"', "").parse::<i64>() {
                 Ok(id) => role_id = Some(id),
                 Err(err) => {
                     error!("Failed to get an integer from the Role value. Failed with error: {}", err);
@@ -187,14 +183,14 @@ pub async fn role_run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommand
                     message_content.push_str(&format!("`{}`\n", permission.to_string()));
                 }
             }
-            send_message(&ctx, &cmd, message_content).await
+            send_message(ctx, cmd, message_content).await
         },
         Err(err) => {
             error!("Failed to get role from database. Failed with error: {}", err);
-            return Err(CommandError {
+            Err(CommandError {
                 message: "Failed to get role from database".to_string(),
                 command_error: None
-            });
+            })
         }
     }
 }

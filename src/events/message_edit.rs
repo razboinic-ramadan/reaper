@@ -7,27 +7,27 @@ use super::utils::filters::filter_message;
 
 impl Handler {
     pub async fn on_message_edit(&self, ctx: &Context, event: MessageUpdateEvent) {
-        if let None = event.guild_id {
+        if event.guild_id.is_none() {
             return;
         }
-        if let None = event.content {
+        if event.content.is_none() {
             return;
         }
 
         let guild_id = event.guild_id.unwrap().0 as i64;
 
         match self.redis.get_message(
-            guild_id.clone(),
+            guild_id,
             event.channel_id.0 as i64,
             event.id.0 as i64
         ).await {
             Ok(message) => {
                 match message {
                     Some(message) => {
-                        if let None = event.author.as_ref() {
+                        if event.author.as_ref().is_none() {
                             return;
                         }
-                        let (user_id, message) = message.split_once(":").unwrap();
+                        let (user_id, message) = message.split_once(':').unwrap();
                         
                         let mut content: String = event.content.clone().unwrap();
                         if let Some(attachments) = event.attachments.as_ref() {
@@ -36,7 +36,7 @@ impl Handler {
                             }
                         }
 
-                        let filter_result = filter_message(&self, guild_id, event.content.unwrap().clone()).await;
+                        let filter_result = filter_message(self, guild_id, event.content.unwrap().clone()).await;
 
                         match self.redis.set_message(
                             event.guild_id.unwrap().0 as i64,
@@ -53,7 +53,7 @@ impl Handler {
 
                         if let Some(filter_result) = filter_result.clone() {
                             let mut user = ctx.cache.user(event.author.as_ref().unwrap().id.0);
-                            if let None = user {
+                            if user.is_none() {
                                 user = match ctx.http.get_user(event.author.as_ref().unwrap().id.0).await {
                                     Ok(user) => Some(user),
                                     Err(err) => {
@@ -78,7 +78,7 @@ impl Handler {
                             }
                             
                             match self.strike(
-                                &ctx,
+                                ctx,
                                 event.guild_id.unwrap().0 as i64,
                                 event.author.as_ref().unwrap().id.0 as i64,
                                 filter_result.0,
@@ -107,9 +107,9 @@ impl Handler {
                         };
 
                         if let Some(logging_config) = guild.config.logging {
-                            let mut content = format!("Message edited in <#{}> by <@{}>:\n**Old:**\n`{}`\n**New:**\n`{}`", event.channel_id.0 as i64, user_id, message.replace("`", r"\`"), content.replace("`", r"\`"));
-                            if let Some(_) = filter_result {
-                                content.push_str(&format!("\nThis message violated the guild filter and was deleted."));
+                            let mut content = format!("Message edited in <#{}> by <@{}>:\n**Old:**\n`{}`\n**New:**\n`{}`", event.channel_id.0 as i64, user_id, message.replace('`', r"\`"), content.replace('`', r"\`"));
+                            if filter_result.is_some() {
+                                content.push_str("\nThis message violated the guild filter and was deleted.");
                             }
                             match ChannelId(logging_config.logging_channel as u64)
                             .send_message(ctx.http.as_ref(), |msg| {
@@ -122,7 +122,7 @@ impl Handler {
                                 Ok(_) => {},
                                 Err(err) => {
                                     error!("Failed to send message to logging channel. Failed with error: {}", err);
-                                    return;
+                                    
                                 }
                             };
                         }
@@ -134,7 +134,7 @@ impl Handler {
             },
             Err(err) => {
                 error!("Failed to get message. Failed with error: {}", err);
-                return;
+                
             }
         }
     }

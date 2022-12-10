@@ -7,16 +7,14 @@ use crate::{Handler, commands::{structs::CommandError, utils::messages::{send_me
 pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInteraction) -> Result<(), CommandError> {
     match cmd.data.options[0].name.as_str() {
         "user" => {
-            if let Err(err) = defer(&ctx, &cmd, false).await {
-                return Err(err)
-            }
+            defer(ctx, cmd, false).await?;
             let mut user_id: i64 = cmd.user.id.0 as i64;
             let mut expired = false;
 
             for option in cmd.data.options[0].options.iter() {
                 match option.kind {
                     CommandOptionType::User => {
-                        match Value::to_string(&option.value.clone().unwrap()).replace("\"", "").parse::<i64>() {
+                        match Value::to_string(&option.value.clone().unwrap()).replace('\"', "").parse::<i64>() {
                             Ok(id) => {
                                 user_id = id;
                             },
@@ -45,19 +43,17 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                     permission = Permissions::ModerationSearchSelf;
                 }
             }
+            else if expired {
+                permission = Permissions::ModerationSearchOthersExpired;
+            }
             else {
-                if expired {
-                    permission = Permissions::ModerationSearchOthersExpired;
-                }
-                else {
-                    permission = Permissions::ModerationSearchOthers;
-                }
+                permission = Permissions::ModerationSearchOthers;
             }
 
-            match handler.has_permission(&ctx, &cmd.member.as_ref().unwrap(), permission).await {
+            match handler.has_permission(ctx, cmd.member.as_ref().unwrap(), permission).await {
                 Ok(has_permission) => {
                     if !has_permission {
-                        return handler.missing_permissions(&ctx, &cmd, permission).await
+                        return handler.missing_permissions(ctx, cmd, permission).await
                     }
                 },
                 Err(err) => {
@@ -101,25 +97,23 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                             message_content.push_str("No active history");
                         }
                     }
-                    return send_message(&ctx, &cmd, message_content).await;
+                    send_message(ctx, cmd, message_content).await
                 },
                 Err(err) => {
                     error!("Failed to get actions for user. Failed with error: {}", err);
-                    return Err(CommandError {
+                    Err(CommandError {
                         message: "Failed to get actions for user".to_string(),
                         command_error: None
-                    });
+                    })
                 }
             }
         },
         "action" => {
-            if let Err(err) = defer(&ctx, &cmd, true).await {
-                return Err(err)
-            }
-            match handler.has_permission(&ctx, &cmd.member.as_ref().unwrap(), Permissions::ModerationSearchUuid).await {
+            defer(ctx, cmd, true).await?;
+            match handler.has_permission(ctx, cmd.member.as_ref().unwrap(), Permissions::ModerationSearchUuid).await {
                 Ok(has_permission) => {
                     if !has_permission {
-                        return handler.missing_permissions(&ctx, &cmd, Permissions::ModerationSearchUuid).await
+                        return handler.missing_permissions(ctx, cmd, Permissions::ModerationSearchUuid).await
                     }
                 },
                 Err(err) => {
@@ -156,27 +150,27 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                                 message_content.push_str(&format!("\n\t*Expires:* <t:{}:F>", expiry));
                             }
 
-                            return send_message(&ctx, &cmd, message_content).await;
+                            send_message(ctx, cmd, message_content).await
                         },
                         None => {
-                            return send_message(&ctx, &cmd, format!("No action found with UUID `{}`", uuid)).await;
+                            send_message(ctx, cmd, format!("No action found with UUID `{}`", uuid)).await
                         }
                     }
                 },
                 Err(e) => {
                     error!("Error getting action: {}", e);
-                    return Err(CommandError{
+                    Err(CommandError{
                         message: "Error getting action".to_string(),
                         command_error: None
-                    });
+                    })
                 }
             }
         }
         _ => {
-            return Err(CommandError {
+            Err(CommandError {
                 message: "Command not found".to_string(),
                 command_error: None,
-            });
+            })
         }
     }
 }

@@ -38,10 +38,10 @@ impl Mongo {
             Ok(client) => Ok(Self { client }),
             Err(err) => {
                 error!("Attempted to create a client. Failed with error: {}", err);
-                return Err(structs::MongoError {
+                Err(structs::MongoError {
                     message: "Failed to create a client".to_string(),
                     mongo_error: Some(err)
-                });
+                })
             }
         }
     }
@@ -58,10 +58,10 @@ impl Mongo {
             Ok(_) => Ok(user),
             Err(err) => {
                 error!("Attempted to create user {} in guild {}. Failed with error: {}", user_id, guild_id, err);
-                return Err(structs::MongoError {
+                Err(structs::MongoError {
                     message: "Failed to create a user".to_string(),
                     mongo_error: Some(err)
-                });
+                })
             }
         }
     }
@@ -109,10 +109,10 @@ impl Mongo {
             Ok(_) => Ok(user_permissions),
             Err(err) => {
                 error!("Attempted to add permission {} to user {} in guild {}. Failed with error: {}", permission.to_string(), user_id, guild_id, err);
-                return Err(structs::MongoError {
+                Err(structs::MongoError {
                     message: "Failed to add permission to user".to_string(),
                     mongo_error: Some(err)
-                });
+                })
             }
         }
     }
@@ -136,10 +136,10 @@ impl Mongo {
             Ok(_) => Ok(user_permissions),
             Err(err) => {
                 error!("Attempted to remove permission {} from user {} in guild {}. Failed with error: {}", permission.to_string(), user_id, guild_id, err);
-                return Err(structs::MongoError {
+                Err(structs::MongoError {
                     message: "Failed to remove permission from user".to_string(),
                     mongo_error: Some(err)
-                });
+                })
             }
         }
     }
@@ -186,14 +186,14 @@ impl Mongo {
                 });
             }
         };
-        match collection.find_one(doc!{"_id": uuid.clone()}, None).await {
+        match collection.find_one(doc!{"_id": uuid}, None).await {
             Ok(action) => Ok(action),
             Err(err) => {
                 error!("Attempted to get action {}. Failed with error: {}", uuid.to_string(), err);
-                return Err(structs::MongoError {
+                Err(structs::MongoError {
                     message: "Failed to get action".to_string(),
                     mongo_error: Some(err)
-                });
+                })
             }
         }
     }
@@ -225,10 +225,10 @@ impl Mongo {
             Ok(_) => Ok(action),
             Err(err) => {
                 error!("Attempted to add action {} to user {} in guild {}. Failed with error: {}", action_type.to_string(), user_id, guild_id, err);
-                return Err(structs::MongoError {
+                Err(structs::MongoError {
                     message: "Failed to add action to user".to_string(),
                     mongo_error: Some(err)
-                });
+                })
             }
         }
     }
@@ -301,10 +301,10 @@ impl Mongo {
             Ok(_) => Ok(()),
             Err(err) => {
                 error!("Attempted to expire action {} in guild {}. Failed with error: {}", action_id, guild_id, err);
-                return Err(structs::MongoError {
+                Err(structs::MongoError {
                     message: "Failed to expire action".to_string(),
                     mongo_error: Some(err)
-                });
+                })
             }
         }
     }
@@ -325,10 +325,10 @@ impl Mongo {
             Ok(_) => Ok(()),
             Err(err) => {
                 error!("Attempted to remove action {} in guild {}. Failed with error: {}", action_id, guild_id, err);
-                return Err(structs::MongoError {
+                Err(structs::MongoError {
                     message: "Failed to remove action".to_string(),
                     mongo_error: Some(err)
-                });
+                })
             }
         }
     }
@@ -339,14 +339,14 @@ impl Mongo {
             FindOneOptions::builder().sort(doc!{"_id": -1}).build()
         )).await {
             Ok(action) => {
-                return Ok(action);
+                Ok(action)
             },
             Err(err) => {
                 error!("Attempted to get recent mod action for moderator {} in guild {}. Failed with error: {}", moderator_id, guild_id, err);
-                return Err(structs::MongoError {
+                Err(structs::MongoError {
                     message: "Failed to get recent mod action".to_string(),
                     mongo_error: Some(err)
-                });
+                })
             }
         }
     }
@@ -403,10 +403,10 @@ impl Mongo {
             Ok(_) => Ok(role),
             Err(err) => {
                 error!("Attempted to create role {} in guild {}. Failed with error: {}", role_id, guild_id, err);
-                return Err(structs::MongoError {
+                Err(structs::MongoError {
                     message: "Failed to create a role".to_string(),
                     mongo_error: Some(err)
-                });
+                })
             }
         }
     }
@@ -454,10 +454,10 @@ impl Mongo {
             Ok(_) => Ok(role_permissions),
             Err(err) => {
                 error!("Attempted to add permission {} to role {} in guild {}. Failed with error: {}", permission.to_string(), role_id, guild_id, err);
-                return Err(structs::MongoError {
+                Err(structs::MongoError {
                     message: "Failed to add permission to role".to_string(),
                     mongo_error: Some(err)
-                });
+                })
             }
         }
     }
@@ -481,10 +481,10 @@ impl Mongo {
             Ok(_) => Ok(role_permissions),
             Err(err) => {
                 error!("Attempted to remove permission {} from role {} in guild {}. Failed with error: {}", permission.to_string(), role_id, guild_id, err);
-                return Err(structs::MongoError {
+                Err(structs::MongoError {
                     message: "Failed to remove permission from role".to_string(),
                     mongo_error: Some(err)
-                });
+                })
             }
         }
     }
@@ -505,10 +505,10 @@ impl Mongo {
             },
             Err(err) => {
                 error!("Attempted to create guild {}. Failed with error: {}", guild_id, err);
-                return Err(structs::MongoError {
+                Err(structs::MongoError {
                     message: "Failed to create a guild".to_string(),
                     mongo_error: Some(err)
-                });
+                })
             }
         }
     }

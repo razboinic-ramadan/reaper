@@ -15,37 +15,35 @@ impl Handler {
             Ok(_) => {
                 match self.mongo.add_action_to_user(user_id, guild_id, ActionType::Kick, reason, mod_id, None).await {
                     Ok(action) => {
-                        self.log_action(&ctx, action.guild_id, &action).await;
-                        return Ok(Some(action));
+                        self.log_action(ctx, action.guild_id, &action).await;
+                        Ok(Some(action))
                     },
                     Err(err) => {
                         error!("Failed to add action to user with id {}. Failed with error: {}", user_id, err);
-                        return Err(CommandError {
+                        Err(CommandError {
                             message: format!("Failed to add action to user with id {}", user_id),
                             command_error: None
-                        });
+                        })
                     }
                 }
             },
             Err(err) => {
                 error!("Failed to kick member. Failed with error: {}", err);
-                return Err(CommandError {
+                Err(CommandError {
                     message: "Failed to kick member. Please try again later.".to_string(),
                     command_error: None
-                });
+                })
             }
         }
     }
 }
 
 pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInteraction) -> Result<(), CommandError> {
-    if let Err(err) = defer(&ctx, &cmd, false).await {
-        return Err(err)
-    }
-    match handler.has_permission(&ctx, &cmd.member.as_ref().unwrap(), Permissions::ModerationKick).await {
+    defer(ctx, cmd, false).await?;
+    match handler.has_permission(ctx, cmd.member.as_ref().unwrap(), Permissions::ModerationKick).await {
         Ok(has_permission) => {
             if !has_permission {
-                return handler.missing_permissions(&ctx, &cmd, Permissions::ModerationKick).await
+                return handler.missing_permissions(ctx, cmd, Permissions::ModerationKick).await
             }
         },
         Err(err) => {
@@ -63,11 +61,11 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
     for option in cmd.data.options.iter() {
         match option.kind {
             CommandOptionType::User => {
-                match Value::to_string(&option.value.clone().unwrap()).replace("\"", "").parse::<i64>() {
+                match Value::to_string(&option.value.clone().unwrap()).replace('\"', "").parse::<i64>() {
                     Ok(id) => {
                         if id == cmd.user.id.0 as i64 {
                             warn!("User {} in guild {} tried to kick themselves", cmd.user.id.0, cmd.guild_id.unwrap().0);
-                            return send_message(&ctx, &cmd, "You cannot kick yourself".to_string()).await;
+                            return send_message(ctx, cmd, "You cannot kick yourself".to_string()).await;
                         }
                         user_id = Some(id)
                     },
@@ -88,8 +86,8 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
     }
 
     let mut messaged_user = false;
-    let mut user = ctx.cache.user(UserId{0: user_id.unwrap() as u64});
-    if let None = user {
+    let mut user = ctx.cache.user(UserId(user_id.unwrap() as u64));
+    if user.is_none() {
         user = match ctx.http.get_user(user_id.unwrap() as u64).await {
             Ok(usr) => {
                 Some(usr)
@@ -117,7 +115,7 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
     }
 
     match handler.kick(
-        &ctx,
+        ctx,
         cmd.guild_id.unwrap().0 as i64,
         user_id.unwrap(),
         reason.unwrap(),
@@ -129,18 +127,18 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                 if !messaged_user {
                     message_content.push_str(&format!("\n*<@{}> could not be notified*", user.as_ref().unwrap().id.0));
                 }
-                return send_message(&ctx, &cmd, message_content).await;
+                send_message(ctx, cmd, message_content).await
             }
             else {
-                return send_message(&ctx, &cmd, "Failed to kick user. Please try again later.".to_string()).await;
+                send_message(ctx, cmd, "Failed to kick user. Please try again later.".to_string()).await
             }
         },
         Err(err) => {
             error!("Failed to kick user. Failed with error: {}", err);
-            return Err(CommandError {
+            Err(CommandError {
                 message: "Failed to kick user".to_string(),
                 command_error: None
-            });
+            })
         }
     }
 }

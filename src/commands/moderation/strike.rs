@@ -21,7 +21,7 @@ impl Handler {
         if let Some(mod_config) = &guild.config.moderation {
             default_strike_string = mod_config.default_strike_duration.to_owned();
         }
-        if let None = strike_duration {
+        if strike_duration.is_none() {
             strike_duration = Some(Duration::new(default_strike_string.to_owned()));
         }
 
@@ -43,7 +43,7 @@ impl Handler {
                                 };
                                 match self.mute(ctx, guild_id, user_id, format!("Strike escalation ({})", strikes), None, Some(duration)).await {
                                     Ok(action) => {
-                                        if let None = action {
+                                        if action.is_none() {
                                             warn!("Could not escalate strike (mute) for user {} in guild {}", user_id, guild_id);
                                         }
                                     },
@@ -55,7 +55,7 @@ impl Handler {
                             ActionType::Kick => {
                                 match self.kick(ctx, guild_id, user_id, format!("Strike escalation ({})", strikes), None).await {
                                     Ok(action) => {
-                                        if let None = action {
+                                        if action.is_none() {
                                             warn!("Could not escalate strike (kick) for user {} in guild {}", user_id, guild_id);
                                         }
                                     },
@@ -71,7 +71,7 @@ impl Handler {
                                 };
                                 match self.ban(ctx, guild_id, user_id, format!("Strike escalation ({})", strikes), None, Some(duration)).await {
                                     Ok(action) => {
-                                        if let None = action {
+                                        if action.is_none() {
                                             warn!("Could not escalate strike (ban) for user {} in guild {}", user_id, guild_id);
                                         }
                                     },
@@ -102,7 +102,7 @@ impl Handler {
         };
         match self.mongo.add_action_to_user(user_id, guild_id, ActionType::Strike, reason, mod_id, strike_duration).await {
             Ok(action) => {
-                self.log_action(&ctx, action.guild_id, &action).await;
+                self.log_action(ctx, action.guild_id, &action).await;
                 Ok(action)
             },
             Err(err) => {
@@ -117,13 +117,11 @@ impl Handler {
 }
 
 pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInteraction) -> Result<(), CommandError> {
-    if let Err(err) = defer(&ctx, &cmd, false).await {
-        return Err(err)
-    }
-    match handler.has_permission(&ctx, &cmd.member.as_ref().unwrap(), Permissions::ModerationStrike).await {
+    defer(ctx, cmd, false).await?;
+    match handler.has_permission(ctx, cmd.member.as_ref().unwrap(), Permissions::ModerationStrike).await {
         Ok(has_permission) => {
             if !has_permission {
-                return handler.missing_permissions(&ctx, &cmd, Permissions::ModerationStrike).await
+                return handler.missing_permissions(ctx, cmd, Permissions::ModerationStrike).await
             }
         },
         Err(err) => {
@@ -142,11 +140,11 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
     for option in cmd.data.options.iter() {
         match option.kind {
             CommandOptionType::User => {
-                match Value::to_string(&option.value.clone().unwrap()).replace("\"", "").parse::<i64>() {
+                match Value::to_string(&option.value.clone().unwrap()).replace('\"', "").parse::<i64>() {
                     Ok(id) => {
                         if id == cmd.user.id.0 as i64 {
                             warn!("User {} in guild {} tried to strike themselves", cmd.user.id.0, cmd.guild_id.unwrap().0);
-                            return send_message(&ctx, &cmd, "You cannot strike yourself".to_string()).await;
+                            return send_message(ctx, cmd, "You cannot strike yourself".to_string()).await;
                         }
                         user_id = Some(id)
                     },
@@ -174,7 +172,7 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
         }
     }
 
-    if let None = duration {
+    if duration.is_none() {
         let guild = match handler.mongo.get_guild(cmd.guild_id.unwrap().0 as i64).await {
             Ok(guild) => Some(guild),
             Err(err) => {
@@ -190,7 +188,7 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
     }
 
     match handler.strike(
-        &ctx,
+        ctx,
         cmd.guild_id.unwrap().0 as i64,
         user_id.unwrap(),
         reason.unwrap(),
@@ -199,8 +197,8 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
     ).await {
         Ok(action) => {
             let mut messaged_user = false;
-            let mut user = ctx.cache.user(UserId{0: action.user_id as u64});
-            if let None = user {
+            let mut user = ctx.cache.user(UserId(action.user_id as u64));
+            if user.is_none() {
                 user = match ctx.http.get_user(action.user_id as u64).await {
                     Ok(usr) => {
                         Some(usr)
@@ -238,14 +236,14 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
             if !messaged_user {
                 message_content.push_str(&format!("\n*<@{}> could not be notified*", user.as_ref().unwrap().id.0));
             }
-            send_message(&ctx, &cmd, message_content).await
+            send_message(ctx, cmd, message_content).await
         },
         Err(err) => {
             error!("Failed to strike user. Failed with error: {}", err);
-            return Err(CommandError {
+            Err(CommandError {
                 message: "Failed to strike user".to_string(),
                 command_error: None
-            });
+            })
         }
     }
 }

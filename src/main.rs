@@ -1,6 +1,6 @@
 use std::env;
-use mongo::mongo::Mongo;
-use crate::redis::redis::Redis;
+use mongo::mongodb::Mongo;
+use crate::redis::redisdb::Redis;
 use serenity::{prelude::GatewayIntents, Client, framework::StandardFramework};
 use tracing::{error, info};
 
@@ -28,7 +28,7 @@ async fn main() {
     };
     let intents = GatewayIntents::non_privileged() | GatewayIntents::GUILD_MEMBERS | GatewayIntents::MESSAGE_CONTENT;
 
-    let mongo = match mongo::mongo::Mongo::create().await {
+    let mongo = match mongo::mongodb::Mongo::create().await {
         Ok(mongo) => mongo,
         Err(_) => {
             return;
@@ -36,7 +36,7 @@ async fn main() {
     };
     info!("Successfully connected to MongoDB");
 
-    let redis = match redis::redis::Redis::create().await {
+    let redis = match redis::redisdb::Redis::create().await {
         Ok(redis) => redis,
         Err(_) => {
             return;

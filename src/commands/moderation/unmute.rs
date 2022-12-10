@@ -23,7 +23,7 @@ impl Handler {
         };
 
         let mut member = ctx.cache.member(guild_id as u64, user_id as u64);
-        if let None = member {
+        if member.is_none() {
             match ctx.http.get_member(guild_id as u64, user_id as u64).await {
                 Ok(mbr) => {
                     member = Some(mbr)
@@ -34,7 +34,7 @@ impl Handler {
                         match self.mongo.get_actions_for_user(user_id, guild_id).await {
                             Ok(actions) => {
                                 for action in actions {
-                                    if action.action_type == ActionType::Mute && action.active == true {
+                                    if action.action_type == ActionType::Mute && action.active {
                                         action_id = Some(action.uuid.to_string());
                                     }
                                 }
@@ -72,13 +72,13 @@ impl Handler {
         }
 
         if let Some(moderation_config) = guild.config.moderation {
-            if member.unwrap().roles.contains(&RoleId{0: moderation_config.mute_role as u64}) {
+            if member.unwrap().roles.contains(&RoleId(moderation_config.mute_role as u64)) {
                 match ctx.http.remove_member_role(guild_id as u64, user_id as u64, moderation_config.mute_role as u64, Some(format!("Unmuted by <@{}>", mod_id).as_str())).await {
                     Ok(_) => {
                         match self.mongo.get_actions_for_user(user_id, guild_id).await {
                             Ok(actions) => {
                                 for action in actions {
-                                    if action.action_type == ActionType::Mute && action.active == true {
+                                    if action.action_type == ActionType::Mute && action.active {
                                         match self.mongo.expire_action(guild_id, action.uuid.to_string().clone()).await {
                                             Ok(_) => return Ok(true),
                                             Err(err) => {
@@ -91,43 +91,41 @@ impl Handler {
                                         }
                                     }
                                 }
-                                return Ok(false);
+                                Ok(false)
                             },
                             Err(err) => {
                                 error!("Failed to get actions for user. Failed with error: {}", err);
-                                return Err(CommandError {
+                                Err(CommandError {
                                     message: "Failed to get actions for user".to_string(),
                                     command_error: None
-                                });
+                                })
                             }
                         }
                     },
                     Err(err) => {
                         error!("Failed to unmute user. Failed with error: {}", err);
-                        return Err(CommandError {
+                        Err(CommandError {
                             message: "Failed to unmute user".to_string(),
                             command_error: None
-                        });
+                        })
                     }
                 }
             } else {
-                return Ok(false);
+                Ok(false)
             }
         }
         else {
-            return Ok(false);
+            Ok(false)
         }
     }
 }
 
 pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInteraction) -> Result<(), CommandError> {
-    if let Err(err) = defer(&ctx, &cmd, false).await {
-        return Err(err)
-    }
-    match handler.has_permission(&ctx, &cmd.member.as_ref().unwrap(), Permissions::ModerationUnmute).await {
+    defer(ctx, cmd, false).await?;
+    match handler.has_permission(ctx, cmd.member.as_ref().unwrap(), Permissions::ModerationUnmute).await {
         Ok(has_permission) => {
             if !has_permission {
-                return handler.missing_permissions(&ctx, &cmd, Permissions::ModerationUnmute).await
+                return handler.missing_permissions(ctx, cmd, Permissions::ModerationUnmute).await
             }
         },
         Err(err) => {
@@ -139,11 +137,11 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
         }
     }
 
-    let user_id = match Value::to_string(&cmd.data.options[0].value.clone().unwrap()).replace("\"", "").parse::<i64>() {
+    let user_id = match Value::to_string(&cmd.data.options[0].value.clone().unwrap()).replace('\"', "").parse::<i64>() {
         Ok(id) => {
             if id == cmd.user.id.0 as i64 {
                 warn!("User {} in guild {} tried to unmute themselves", cmd.user.id.0, cmd.guild_id.unwrap().0);
-                return send_message(&ctx, &cmd, "You cannot unmute yourself".to_string()).await;
+                return send_message(ctx, cmd, "You cannot unmute yourself".to_string()).await;
             }
             id as u64
         },
@@ -157,7 +155,7 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
     };
 
     match handler.unmute(
-        &ctx,
+        ctx,
         cmd.guild_id.unwrap().0 as i64,
         user_id as i64,
         Some(cmd.user.id.0 as i64)
@@ -183,14 +181,14 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                     }
                 }
             }
-            return send_message(&ctx, &cmd, format!("Unmuted <@{}>", user_id)).await;
+            send_message(ctx, cmd, format!("Unmuted <@{}>", user_id)).await
         },
         Err(err) => {
             error!("Failed to unmute user. Failed with error: {}", err);
-            return Err(CommandError {
+            Err(CommandError {
                 message: "Failed to unmute user".to_string(),
                 command_error: None
-            });
+            })
         }
     }
 }

@@ -5,16 +5,14 @@ use tracing::{error, warn};
 use crate::{Handler, commands::{structs::CommandError, utils::messages::{send_message, defer}}, mongo::structs::Permissions};
 
 pub async fn user_run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInteraction) -> Result<(), CommandError> {
-    if let Err(err) = defer(&ctx, &cmd, false).await {
-        return Err(err)
-    }
+    defer(ctx, cmd, false).await?;
     let mut user_id: Option<i64> = None;
     let mut permission: Option<Permissions> = None;
 
     for option in cmd.data.options[0].options.iter() {
         match option.kind {
             CommandOptionType::User => {
-                match Value::to_string(&option.value.clone().unwrap()).replace("\"", "").parse::<i64>() {
+                match Value::to_string(&option.value.clone().unwrap()).replace('\"', "").parse::<i64>() {
                     Ok(id) => user_id = Some(id),
                     Err(err) => {
                         error!("Failed to get an integer from the User value. Failed with error: {}", err);
@@ -31,7 +29,7 @@ pub async fn user_run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommand
                         match Permissions::from(perm.to_string()) {
                             Permissions::Unknown => {
                                 warn!("Permission {} is not a valid permission and could not be removed", perm);
-                                return send_message(&ctx, &cmd, format!("`{}` is not a valid permission and could not be removed", perm)).await;
+                                return send_message(ctx, cmd, format!("`{}` is not a valid permission and could not be removed", perm)).await;
                             }
                             _ => permission = Some(Permissions::from(perm.to_string())),
                         }
@@ -56,7 +54,7 @@ pub async fn user_run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommand
         Ok(user) => {
             if !user.permissions.contains(&permission.unwrap()) {
                 warn!("User {} does not have permission {}", user_id.unwrap(), permission.unwrap().to_string());
-                return send_message(&ctx, &cmd, format!("<@{}> does not have `{}`", user_id.unwrap(), permission.unwrap().to_string())).await;
+                return send_message(ctx, cmd, format!("<@{}> does not have `{}`", user_id.unwrap(), permission.unwrap().to_string())).await;
             }
         },
         Err(err) => {
@@ -74,29 +72,27 @@ pub async fn user_run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommand
         permission.unwrap()
     ).await {
         Ok(_) => {
-            send_message(&ctx, &cmd, format!("Successfully removed `{}` from <@{}>", permission.unwrap().to_string(), user_id.unwrap())).await
+            send_message(ctx, cmd, format!("Successfully removed `{}` from <@{}>", permission.unwrap().to_string(), user_id.unwrap())).await
         },
         Err(err) => {
             error!("Failed to remove permission to user: {}", err);
-            return Err(CommandError {
+            Err(CommandError {
                 message: "Failed to remove permission from user".to_string(),
                 command_error: None
-            });
+            })
         }
     }
 }
 
 pub async fn role_run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInteraction) -> Result<(), CommandError> {
-    if let Err(err) = defer(&ctx, &cmd, false).await {
-        return Err(err)
-    }
+    defer(ctx, cmd, false).await?;
     let mut role_id: Option<i64> = None;
     let mut permission: Option<Permissions> = None;
 
     for option in cmd.data.options[0].options[0].options.iter() {
         match option.kind {
             CommandOptionType::Role => {
-                match Value::to_string(&option.value.clone().unwrap()).replace("\"", "").parse::<i64>() {
+                match Value::to_string(&option.value.clone().unwrap()).replace('\"', "").parse::<i64>() {
                     Ok(id) => role_id = Some(id),
                     Err(err) => {
                         error!("Failed to get an integer from the Role value. Failed with error: {}", err);
@@ -113,7 +109,7 @@ pub async fn role_run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommand
                         match Permissions::from(perm.to_string()) {
                             Permissions::Unknown => {
                                 warn!("Permission {} is not a valid permission and could not be removed", perm);
-                                return send_message(&ctx, &cmd, format!("`{}` is not a valid permission and could not be removed", perm)).await;
+                                return send_message(ctx, cmd, format!("`{}` is not a valid permission and could not be removed", perm)).await;
                             }
                             _ => permission = Some(Permissions::from(perm.to_string())),
                         }
@@ -138,7 +134,7 @@ pub async fn role_run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommand
         Ok(role) => {
             if !role.permissions.contains(&permission.unwrap()) {
                 warn!("Role {} does not have permission {}", role_id.unwrap(), permission.unwrap().to_string());
-                return send_message(&ctx, &cmd, format!("<@&{}> does not have `{}`", role_id.unwrap(), permission.unwrap().to_string())).await;
+                return send_message(ctx, cmd, format!("<@&{}> does not have `{}`", role_id.unwrap(), permission.unwrap().to_string())).await;
             }
         },
         Err(err) => {
@@ -156,14 +152,14 @@ pub async fn role_run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommand
         permission.unwrap()
     ).await {
         Ok(_) => {
-            send_message(&ctx, &cmd, format!("Successfully removed `{}` from <@&{}>", permission.unwrap().to_string(), role_id.unwrap())).await
+            send_message(ctx, cmd, format!("Successfully removed `{}` from <@&{}>", permission.unwrap().to_string(), role_id.unwrap())).await
         },
         Err(err) => {
             error!("Failed to remove permission to role: {}", err);
-            return Err(CommandError {
+            Err(CommandError {
                 message: "Failed to remove permission to role".to_string(),
                 command_error: None
-            });
+            })
         }
     }
 }
