@@ -435,7 +435,7 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                                         command_error: None
                                     });
                                 }
-                            };
+                            }
                         },
                         None => {
                             match cmd.edit_original_interaction_response(&ctx.http, |message| {
@@ -450,7 +450,7 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                                         command_error: None
                                     });
                                 }
-                            };
+                            }
                         }
                     }
                 },
