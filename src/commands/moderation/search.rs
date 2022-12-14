@@ -219,7 +219,7 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
             
             while let Some(interaction) = interaction_stream.next().await {
                 if interaction.user.id != cmd.user.id {
-                    if let Err(err) = interaction.create_interaction_response(&ctx.http, |response| {
+                    match interaction.create_interaction_response(&ctx.http, |response| {
                         response
                             .kind(InteractionResponseType::ChannelMessageWithSource)
                             .interaction_response_data(|message| {
@@ -228,11 +228,14 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                                 .ephemeral(true)
                             })
                     }).await {
-                        error!("Failed to create followup message. Failed with error: {}", err);
-                        return Err(CommandError {
-                            message: "Failed to create followup message".to_string(),
-                            command_error: None
-                        });
+                        Ok(_) => {return Ok(())},
+                        Err(err) => {
+                            error!("Failed to create followup message. Failed with error: {}", err);
+                            return Err(CommandError {
+                                message: "Failed to create followup message".to_string(),
+                                command_error: None
+                            });
+                        }
                     }
                 }
                 match interaction.create_interaction_response(&ctx.http, |message| {
