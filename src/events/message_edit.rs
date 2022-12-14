@@ -13,6 +13,12 @@ impl Handler {
         if event.content.is_none() {
             return;
         }
+        if event.author.as_ref().is_none() {
+            return;
+        }
+        if event.author.as_ref().unwrap().bot {
+            return;
+        }
 
         let guild_id = event.guild_id.unwrap().0 as i64;
 
@@ -24,9 +30,6 @@ impl Handler {
             Ok(message) => {
                 match message {
                     Some(message) => {
-                        if event.author.as_ref().is_none() {
-                            return;
-                        }
                         let (user_id, message) = message.split_once(':').unwrap();
                         
                         let mut content: String = event.content.clone().unwrap();
