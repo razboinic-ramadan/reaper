@@ -55,7 +55,7 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
         }
     }
 
-    match handler.mongo.update_action_duration(cmd.guild_id.unwrap().0 as i64, uuid.unwrap(), duration.unwrap()).await {
+    match handler.mongo.update_action_duration(cmd.guild_id.unwrap().0 as i64, uuid.unwrap(), duration.clone().unwrap()).await {
         Ok(action) => {
             if let Some(action) = action {
                 let guild = match handler.mongo.get_guild(action.guild_id).await {
@@ -69,7 +69,7 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                     if let Some(logging_config) = guild.config.logging {
                         if let Err(err) = ChannelId(logging_config.logging_channel as u64).send_message(&ctx.http, |message| {
                             message
-                                .content(format!("UUID `{}` duration (for <@{}>) has been updated to <t:{}:F> by <@{}>", action.uuid, action.user_id, action.expiry.unwrap(), cmd.user.id.0))
+                                .content(format!("UUID `{}` duration (for <@{}>) has been updated to <t:{}:F> by <@{}>", action.uuid, action.user_id, duration.clone().unwrap().to_unix_timestamp(), cmd.user.id.0))
                                 .allowed_mentions(|allowed_mentions| {
                                     allowed_mentions.empty_parse()
                                 })
@@ -78,7 +78,7 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                         }
                     }
                 }
-                send_message(ctx, cmd, format!("Updated action with UUID `{}` to have a duration of <t:{}:F>", action.uuid, action.expiry.unwrap())).await
+                send_message(ctx, cmd, format!("Updated action with UUID `{}` to have a duration of <t:{}:F>", action.uuid, duration.unwrap().to_unix_timestamp())).await
             }
             else {
                 send_message(ctx, cmd, "The action with this ID does not exist".to_string()).await
