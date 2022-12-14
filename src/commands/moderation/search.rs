@@ -15,7 +15,7 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
             for option in cmd.data.options[0].options.iter() {
                 match option.kind {
                     CommandOptionType::User => {
-                        match Value::to_string(&option.value.clone().unwrap()).replace("\"", "").parse::<i64>() {
+                        match Value::to_string(&option.value.clone().unwrap()).replace('\"', "").parse::<i64>() {
                             Ok(id) => {
                                 user_id = id;
                             },
@@ -37,9 +37,7 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
 
             let permission;
             if user_id == cmd.user.id.0 as i64 {
-                if let Err(err) = defer(&ctx, &cmd, true).await {
-                    return Err(err)
-                }
+                defer(ctx, cmd, true).await?;
                 if expired {
                     permission = Permissions::ModerationSearchSelfExpired;
                 }
@@ -48,9 +46,7 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                 }
             }
             else {
-                if let Err(err) = defer(&ctx, &cmd, false).await {
-                    return Err(err)
-                }
+                defer(ctx, cmd, false).await?;
                 if expired {
                     permission = Permissions::ModerationSearchOthersExpired;
                 }
@@ -59,10 +55,10 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                 }
             }
 
-            match handler.has_permission(&ctx, &cmd.member.as_ref().unwrap(), permission).await {
+            match handler.has_permission(ctx, cmd.member.as_ref().unwrap(), permission).await {
                 Ok(has_permission) => {
                     if !has_permission {
-                        return handler.missing_permissions(&ctx, &cmd, permission).await
+                        return handler.missing_permissions(ctx, cmd, permission).await
                     }
                 },
                 Err(err) => {
@@ -103,7 +99,7 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                     action.active
                 }
             });
-            if actions.len() == 0 {
+            if actions.is_empty() {
                 if let Err(err) = cmd.edit_original_interaction_response(&ctx.http, |message| {
                     message
                         .embed(|embed| {
@@ -121,28 +117,27 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                 return Ok(())
             }
             else {
-                let field_title;
-                match actions[0].active {
-                    true => field_title = match actions[0].action_type {
+                let field_title = match actions[0].active {
+                    true => match actions[0].action_type {
                         ActionType::Strike => "Strike",
                         ActionType::Mute => "Mute",
                         ActionType::Kick => "Kick",
                         ActionType::Ban => "Ban",
                         ActionType::Unknown => "Unknown"
                     }.to_string(),
-                    false => field_title = format!("{} (Expired)", match actions[0].action_type {
+                    false => format!("{} (Expired)", match actions[0].action_type {
                         ActionType::Strike => "Strike",
                         ActionType::Mute => "Mute",
                         ActionType::Kick => "Kick",
                         ActionType::Ban => "Ban",
                         ActionType::Unknown => "Unknown"
                     })
-                }
+                };
                 let mut field_description = format!("{}\n\n*Issued by:* <@{}>\n*Issued at:* <t:{}:F>\n", actions[0].reason, actions[0].moderator_id, actions[0].uuid.timestamp().timestamp_millis() / 1000);
                 if let Some(duration) = actions[0].expiry {
                     field_description.push_str(&format!("*Expires:* <t:{}:F>\n", duration));
                 }
-                field_description.push_str(&format!("*UUID:* `{}`", actions[0].uuid.to_string()));
+                field_description.push_str(&format!("*UUID:* `{}`", actions[0].uuid));
                 if let Err(err) = cmd.edit_original_interaction_response(&ctx.http, |message| {
                     message
                         .embed(|embed| {
@@ -212,7 +207,7 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
             }
             let mut page = 0;
             let mut interaction_stream = match cmd.get_interaction_response(&ctx.http).await {
-                Ok(interaction) => interaction.await_component_interactions(&ctx).timeout(Duration::from_secs(60 * 5)).build(),
+                Ok(interaction) => interaction.await_component_interactions(ctx).timeout(Duration::from_secs(60 * 5)).build(),
                 Err(err) => {
                     error!("Failed to get interaction response. Failed with error: {}", err);
                     return Err(CommandError {
@@ -271,28 +266,28 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                     }
                     _ => {}
                 }
-                let field_title;
-                match actions[page].active {
-                    true => field_title = match actions[page].action_type {
+
+                let field_title = match actions[page].active {
+                    true => match actions[page].action_type {
                         ActionType::Strike => "Strike",
                         ActionType::Mute => "Mute",
                         ActionType::Kick => "Kick",
                         ActionType::Ban => "Ban",
                         ActionType::Unknown => "Unknown"
                     }.to_string(),
-                    false => field_title = format!("{} (Expired)", match actions[page].action_type {
+                    false => format!("{} (Expired)", match actions[page].action_type {
                         ActionType::Strike => "Strike",
                         ActionType::Mute => "Mute",
                         ActionType::Kick => "Kick",
                         ActionType::Ban => "Ban",
                         ActionType::Unknown => "Unknown"
                     })
-                }
+                };
                 let mut field_description = format!("{}\n\n*Issued by:* <@{}>\n*Issued at:* <t:{}:F>\n", actions[page].reason, actions[page].moderator_id, actions[page].uuid.timestamp().timestamp_millis() / 1000);
                 if let Some(duration) = actions[page].expiry {
                     field_description.push_str(&format!("*Expires:* <t:{}:F>\n", duration));
                 }
-                field_description.push_str(&format!("*UUID:* `{}`", actions[page].uuid.to_string()));
+                field_description.push_str(&format!("*UUID:* `{}`", actions[page].uuid));
                 if let Err(err) = cmd.edit_original_interaction_response(&ctx.http, |message| {
                     message
                         .embed(|embed| {
@@ -361,20 +356,18 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                 }
             }
             match cmd.delete_original_interaction_response(&ctx.http).await {
-                Ok(_) => return Ok(()),
+                Ok(_) => Ok(()),
                 Err(err) => {
                     error!("Failed to delete original interaction response. Failed with error: {}", err);
-                    return Err(CommandError {
+                    Err(CommandError {
                         message: "Failed to delete original interaction response".to_string(),
                         command_error: None
-                    });
+                    })
                 }
             }
         },
         "action" => {
-            if let Err(err) = defer(&ctx, &cmd, true).await {
-                return Err(err)
-            }
+            defer(ctx, cmd, true).await?;
             match handler.has_permission(ctx, cmd.member.as_ref().unwrap(), Permissions::ModerationSearchUuid).await {
                 Ok(has_permission) => {
                     if !has_permission {
@@ -398,16 +391,15 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                 Ok(action) => {
                     match action {
                         Some(action) => {
-                            let field_title;
-                            match action.active {
-                                true => field_title = match action.action_type {
+                            let field_title = match action.active {
+                                true => match action.action_type {
                                     ActionType::Strike => "Strike",
                                     ActionType::Mute => "Mute",
                                     ActionType::Kick => "Kick",
                                     ActionType::Ban => "Ban",
                                     ActionType::Unknown => "Unknown"
                                 }.to_string(),
-                                false => field_title = format!("{} (Expired)", match action.action_type {
+                                false => format!("{} (Expired)", match action.action_type {
                                     ActionType::Strike => "Strike",
                                     ActionType::Mute => "Mute",
                                     ActionType::Kick => "Kick",
@@ -427,13 +419,13 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                                             .field(field_title, field_description, false)
                                     })
                             }).await {
-                                Ok(_) => return Ok(()),
+                                Ok(_) => Ok(()),
                                 Err(err) => {
                                     error!("Failed to edit original interaction response. Failed with error: {}", err);
-                                    return Err(CommandError {
+                                    Err(CommandError {
                                         message: "Failed to edit original interaction response".to_string(),
                                         command_error: None
-                                    });
+                                    })
                                 }
                             }
                         },
@@ -442,13 +434,13 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                                 message
                                     .content(format!("Action with UUID `{}` not found", uuid))
                             }).await {
-                                Ok(_) => return Ok(()),
+                                Ok(_) => Ok(()),
                                 Err(err) => {
                                     error!("Failed to edit original interaction response. Failed with error: {}", err);
-                                    return Err(CommandError {
+                                    Err(CommandError {
                                         message: "Failed to edit original interaction response".to_string(),
                                         command_error: None
-                                    });
+                                    })
                                 }
                             }
                         }
@@ -456,18 +448,18 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                 },
                 Err(err) => {
                     error!("Failed to get action from database. Failed with error: {}", err);
-                    return Err(CommandError {
+                    Err(CommandError {
                         message: "Failed to get action from database".to_string(),
                         command_error: None
-                    });
+                    })
                 }
             }
         },
         _ => {
-            return Err(CommandError {
+            Err(CommandError {
                 message: "Command not found".to_string(),
                 command_error: None
-            });
+            })
         }
     }
 }
