@@ -1,4 +1,4 @@
-use serenity::{prelude::Context, model::{prelude::{interaction::Interaction, Member, ChannelId}, permissions}};
+use serenity::{prelude::Context, model::{prelude::{interaction::{Interaction, InteractionType}, Member, ChannelId}, permissions}};
 use tracing::error;
 use crate::{Handler, commands, commands::{structs::CommandError, utils::messages::send_message}, mongo::structs::{Permissions, Action, ActionType}};
 
@@ -6,39 +6,43 @@ use super::{utils::{guild::guild_id_to_guild}};
 
 impl Handler {
     pub async fn on_command(&self, ctx: Context, interaction: Interaction) {
-        if let Interaction::ApplicationCommand(command) = interaction {
-            let command_result: Result<(), CommandError> = match command.data.name.as_str() {
-                "permissions" => commands::permissions::router::run(self, &ctx, &command).await,
-                "strike" => commands::moderation::strike::run(self, &ctx, &command).await,
-                "search" => commands::moderation::search::run(self, &ctx, &command).await,
-                "mute" => commands::moderation::mute::run(self, &ctx, &command).await,
-                "unmute" => commands::moderation::unmute::run(self, &ctx, &command).await,
-                "kick" => commands::moderation::kick::run(self, &ctx, &command).await,
-                "ban" => commands::moderation::ban::run(self, &ctx, &command).await,
-                "unban" => commands::moderation::unban::run(self, &ctx, &command).await,
-                "remove" => commands::moderation::remove::run(self, &ctx, &command).await,
-                "expire" => commands::moderation::expire::run(self, &ctx, &command).await,
-                "duration" => commands::moderation::duration::run(self, &ctx, &command).await,
-                "reason" => commands::moderation::reason::run(self, &ctx, &command).await,
-                _ => Err(CommandError {
-                    message: "Command not found".to_string(),
-                    command_error: None
-                })
-            };
-            match command_result {
-                Ok(_) => (),
-                Err(err) => {
-                    error!("Command failed with message: {}", err.message);
-                    let mut message_content = format!("Failed to run /{} command with message: {}", command.data.name, err.message);
-                    if let Some(command_error) = err.command_error {
-                        error!("An error was provided: {}", command_error);
-                        message_content.push_str(&format!("\nError: {}", command_error));
-                    }
-                    if let Err(err) = send_message(&ctx, &command, message_content).await {
-                        error!("Failed to send message to user notifying of an error. Failed with error: {}", err);
+        match interaction.kind() {
+            InteractionType::ApplicationCommand => {
+                let command = interaction.application_command().unwrap();
+                let command_result: Result<(), CommandError> = match command.data.name.as_str() {
+                    "permissions" => commands::permissions::router::run(&self, &ctx, &command).await,
+                    "strike" => commands::moderation::strike::run(&self, &ctx, &command).await,
+                    "search" => commands::moderation::search::run(&self, &ctx, &command).await,
+                    "mute" => commands::moderation::mute::run(&self, &ctx, &command).await,
+                    "unmute" => commands::moderation::unmute::run(&self, &ctx, &command).await,
+                    "kick" => commands::moderation::kick::run(&self, &ctx, &command).await,
+                    "ban" => commands::moderation::ban::run(&self, &ctx, &command).await,
+                    "unban" => commands::moderation::unban::run(&self, &ctx, &command).await,
+                    "remove" => commands::moderation::remove::run(&self, &ctx, &command).await,
+                    "expire" => commands::moderation::expire::run(&self, &ctx, &command).await,
+                    "duration" => commands::moderation::duration::run(&self, &ctx, &command).await,
+                    "reason" => commands::moderation::reason::run(&self, &ctx, &command).await,
+                    _ => Err(CommandError {
+                        message: "Command not found".to_string(),
+                        command_error: None
+                    })
+                };
+                match command_result {
+                    Ok(_) => (),
+                    Err(err) => {
+                        error!("Command failed with message: {}", err.message);
+                        let mut message_content = format!("Failed to run /{} command with message: {}", command.data.name, err.message);
+                        if let Some(command_error) = err.command_error {
+                            error!("An error was provided: {}", command_error);
+                            message_content.push_str(&format!("\nError: {}", command_error));
+                        }
+                        if let Err(err) = send_message(&ctx, &command, message_content).await {
+                            error!("Failed to send message to user notifying of an error. Failed with error: {}", err);
+                        }
                     }
                 }
             }
+            _ => {}
         }
     }
 
