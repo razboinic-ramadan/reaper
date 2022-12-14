@@ -219,10 +219,14 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
             
             while let Some(interaction) = interaction_stream.next().await {
                 if interaction.user.id != cmd.user.id {
-                    if let Err(err) = interaction.create_followup_message(&ctx.http, |message| {
-                        message
-                            .content("You can't use this button, since you didn't run this command")
-                            .ephemeral(true)
+                    if let Err(err) = interaction.create_interaction_response(&ctx.http, |response| {
+                        response
+                            .kind(InteractionResponseType::ChannelMessageWithSource)
+                            .interaction_response_data(|message| {
+                                message
+                                .content("You can't use this button, since you didn't run this command")
+                                .ephemeral(true)
+                            })
                     }).await {
                         error!("Failed to create followup message. Failed with error: {}", err);
                         return Err(CommandError {
