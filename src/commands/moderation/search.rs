@@ -228,7 +228,7 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                                 .ephemeral(true)
                             })
                     }).await {
-                        Ok(_) => {return Ok(())},
+                        Ok(_) => {continue},
                         Err(err) => {
                             error!("Failed to create followup message. Failed with error: {}", err);
                             return Err(CommandError {
