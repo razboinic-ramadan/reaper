@@ -28,7 +28,7 @@ impl Duration {
         };
 
         let reg: Regex = Regex::new(r"(\d+)\S*(y|mo|w|d|h|m|s)").unwrap();
-        for capture in reg.captures_iter(&duration_string) {
+        for capture in reg.captures_iter(&duration_string.to_lowercase()) {
             let value = capture.get(1).unwrap().as_str().parse::<u64>().unwrap();
             let unit = capture.get(2).unwrap().as_str();
 
