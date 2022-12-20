@@ -66,7 +66,7 @@ impl Handler {
                                 } 
                             }
 
-                            let mut escalation = None;
+                            let escalation;
                             match self.strike(
                                 ctx,
                                 event.guild_id.unwrap().0 as i64,
