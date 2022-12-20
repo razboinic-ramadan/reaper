@@ -233,7 +233,7 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                 if let Some(duration) = escalation.expiry {
                     dm_content.push_str(&format!("until <t:{}:F> ", duration));
                 }
-                dm_content.push_str(&format!("because of the amount of strikes you have*"));
+                dm_content.push_str("because of the amount of strikes you have*");
             }
             match user.as_ref().unwrap().direct_message(&ctx.http, |message| {
                 message

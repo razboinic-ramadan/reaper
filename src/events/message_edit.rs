@@ -103,7 +103,7 @@ impl Handler {
                                     if let Some(duration) = escalation.expiry {
                                         dm_content.push_str(&format!("until <t:{}:F> ", duration));
                                     }
-                                    dm_content.push_str(&format!("because of the amount of strikes you have*"));
+                                    dm_content.push_str("because of the amount of strikes you have*");
                                 }
                                 match user.direct_message(&ctx.http, |message| {
                                     message
