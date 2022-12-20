@@ -5,7 +5,7 @@ use tracing::{error, warn};
 use crate::{Handler, commands::{utils::{duration::Duration, messages::{send_message, defer}}, structs::CommandError}, mongo::structs::{Action, ActionType, Permissions}};
 
 impl Handler {
-    pub async fn strike(&self, ctx: &Context, guild_id: i64, user_id: i64, reason: String, moderator_id: Option<i64>, duration: Option<Duration>) -> Result<Action, CommandError> {
+    pub async fn strike(&self, ctx: &Context, guild_id: i64, user_id: i64, reason: String, moderator_id: Option<i64>, duration: Option<Duration>) -> Result<(Action, Option<Action>), CommandError> {
         let guild = match self.mongo.get_guild(guild_id).await {
             Ok(guild) => guild,
             Err(err) => {
@@ -24,10 +24,11 @@ impl Handler {
         if strike_duration.is_none() {
             strike_duration = Some(Duration::new(default_strike_string.to_owned()));
         }
+        let mut escalation = None;
 
         match self.mongo.get_actions_for_user(user_id, guild_id).await {
             Ok(actions) => {
-                let mut strikes = 0;
+                let mut strikes = 1;
                 for action in actions {
                     if action.active && action.action_type == ActionType::Strike {
                         strikes += 1;
@@ -46,6 +47,7 @@ impl Handler {
                                         if action.is_none() {
                                             warn!("Could not escalate strike (mute) for user {} in guild {}", user_id, guild_id);
                                         }
+                                        escalation = action;
                                     },
                                     Err(err) => {
                                         return Err(err);
@@ -58,6 +60,7 @@ impl Handler {
                                         if action.is_none() {
                                             warn!("Could not escalate strike (kick) for user {} in guild {}", user_id, guild_id);
                                         }
+                                        escalation = action;
                                     },
                                     Err(err) => {
                                         return Err(err);
@@ -74,6 +77,7 @@ impl Handler {
                                         if action.is_none() {
                                             warn!("Could not escalate strike (ban) for user {} in guild {}", user_id, guild_id);
                                         }
+                                        escalation = action;
                                     },
                                     Err(err) => {
                                         return Err(err);
@@ -103,7 +107,7 @@ impl Handler {
         match self.mongo.add_action_to_user(user_id, guild_id, ActionType::Strike, reason, mod_id, strike_duration).await {
             Ok(action) => {
                 self.log_action(ctx, action.guild_id, &action).await;
-                Ok(action)
+                Ok((action, escalation))
             },
             Err(err) => {
                 error!("Failed to add strike to user with id {}. Failed with error: {}", user_id, err);
@@ -195,7 +199,7 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
         Some(cmd.user.id.0 as i64),
         duration.clone()
     ).await {
-        Ok(action) => {
+        Ok((action, escalation)) => {
             let mut messaged_user = false;
             let mut user = ctx.cache.user(UserId(action.user_id as u64));
             if user.is_none() {
@@ -218,6 +222,19 @@ pub async fn run(handler: &Handler, ctx: &Context, cmd: &ApplicationCommandInter
                 dm_content.push_str(&format!(" until <t:{}:F>", duration.to_unix_timestamp()));
             }
             dm_content.push_str(&format!(" for:\n`{}`", action.reason));
+            if let Some(escalation) = escalation {
+                dm_content.push_str(&format!("\n\n*You have also been **{}** ", match escalation.action_type {
+                    ActionType::Unknown => "`unknown`",
+                    ActionType::Strike => "given a strike",
+                    ActionType::Mute => "muted",
+                    ActionType::Kick => "kicked",
+                    ActionType::Ban => "banned"
+                }));
+                if let Some(duration) = escalation.expiry {
+                    dm_content.push_str(&format!("until <t:{}:F> ", duration));
+                }
+                dm_content.push_str(&format!("because of the amount of strikes you have*"));
+            }
             match user.as_ref().unwrap().direct_message(&ctx.http, |message| {
                 message
                     .content(dm_content)
