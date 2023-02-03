@@ -495,7 +495,8 @@ impl Mongo {
             id: guild_id,
             config: structs::GuildConfig {
                 logging: None,
-                moderation: None
+                moderation: None,
+                boards: None
             }
         };
 

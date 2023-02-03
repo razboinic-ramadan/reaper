@@ -1,4 +1,4 @@
-use serenity::{prelude::{EventHandler, Context}, model::prelude::{Ready, Activity, command::Command, interaction::Interaction, Message, ChannelId, MessageId, GuildId, MessageUpdateEvent}};
+use serenity::{prelude::{EventHandler, Context}, model::prelude::{Ready, Activity, command::Command, interaction::Interaction, Message, ChannelId, MessageId, GuildId, MessageUpdateEvent, Reaction}};
 use tracing::{info, error};
 use crate::{Handler, commands, events::expiry::expire_actions};
 
@@ -20,6 +20,10 @@ impl EventHandler for Handler {
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         self.on_command(ctx, interaction).await;
+    }
+
+    async fn reaction_add(&self, ctx: Context, reaction: Reaction) {
+        self.reaction_add(&ctx, &reaction).await;
     }
 
     async fn ready(&self, ctx: Context, ready: Ready) {

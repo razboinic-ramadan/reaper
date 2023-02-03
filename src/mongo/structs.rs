@@ -229,10 +229,17 @@ fn deserialize_strike_escalations<'de, D>(deserializer: D) -> Result<HashMap<u64
 }
 
 #[derive(Serialize, Deserialize, Clone)]
+pub struct BoardConfig {
+    pub emotes: Vec<String>,
+    pub quota: u64
+}
+
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GuildConfig {
     pub logging: Option<LoggingConfig>,
-    pub moderation: Option<ModerationConfig>
+    pub moderation: Option<ModerationConfig>,
+    pub boards: Option<HashMap<String, BoardConfig>>
 }
 
 #[derive(Serialize, Deserialize)]
@@ -276,6 +283,13 @@ impl Borrow<Guild> for mongodb::bson::Document {
                         blacklisted_regex: moderation.get_array("blacklistedRegex").unwrap().iter().map(|regex| regex.as_str().unwrap().to_string()).collect(),
                         default_strike_duration: moderation.get_str("defaultStrikeDuration").unwrap().to_string()
                     }),
+                    Err(_) => None
+                },
+                boards: match self.get_document("config").unwrap().get_document("boards") {
+                    Ok(boards) => Some(boards.iter().map(|(key, value)| (key.to_string(), BoardConfig {
+                        emotes: value.as_document().unwrap().get_array("emotes").unwrap().iter().map(|emote| emote.as_str().unwrap().to_string()).collect(),
+                        quota: value.as_document().unwrap().get_i64("quota").unwrap() as u64
+                    })).collect()),
                     Err(_) => None
                 }
             }
