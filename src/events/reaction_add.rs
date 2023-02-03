@@ -18,6 +18,9 @@ impl Handler {
                     for emote in config.emotes.iter() {
                         if emote == &reaction.emoji.to_string() {
                             if let Ok(message) = reaction.message(&ctx.http).await {
+                                if message.author.bot {
+                                    return
+                                }
                                 for rec in message.reactions {
                                     if &rec.reaction_type.to_string() == emote && rec.count < config.quota {
                                         return
