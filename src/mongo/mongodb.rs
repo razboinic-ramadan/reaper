@@ -537,4 +537,40 @@ impl Mongo {
             }
         }
     }
+
+    pub async fn check_message_on_board(&self, message_id: i64, channel_id: i64) -> Result<bool, structs::MongoError> {
+        let collection: Collection<structs::BoardMessage> = self.client.database("reaper").collection("boards");
+        let message = match collection.find_one(doc!{"messageID": message_id, "channelID": channel_id}, None).await {
+            Ok(message) => message,
+            Err(err) => {
+                error!("Attempted to check if message {} is on a board. Failed with error: {}", message_id, err);
+                return Err(structs::MongoError {
+                    message: "Failed to check if message is on a board".to_string(),
+                    mongo_error: Some(err)
+                });
+            }
+        };
+        match message {
+            Some(_) => Ok(true),
+            None => Ok(false)
+        }
+    }
+
+    pub async fn add_message_to_board(&self, message_id: i64, channel_id: i64) -> Result<(), structs::MongoError> {
+        let collection: Collection<structs::BoardMessage> = self.client.database("reaper").collection("boards");
+        let board_message = structs::BoardMessage {
+            message_id,
+            channel_id
+        };
+        match collection.insert_one(to_document(&board_message).unwrap(), None).await {
+            Ok(_) => Ok(()),
+            Err(err) => {
+                error!("Attempted to add message {} to board. Failed with error: {}", message_id, err);
+                Err(structs::MongoError {
+                    message: "Failed to add message to board".to_string(),
+                    mongo_error: Some(err)
+                })
+            }
+        }
+    }
 }

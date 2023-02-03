@@ -22,6 +22,11 @@ impl Handler {
                                     if &rec.reaction_type.to_string() == emote && rec.count < config.quota {
                                         return
                                     }
+                                    if let Ok(found) = self.mongo.check_message_on_board(message.id.0 as i64, channel as i64).await {
+                                        if found {
+                                            return
+                                        }
+                                    }
                                     let mut content: String = message.content.clone();
                                     for attachment in message.attachments.iter() {
                                         content.push_str(&format!("\n{}", &attachment.url));
@@ -31,6 +36,9 @@ impl Handler {
                                             .content(format!("`{}` by <@{}>", content, message.author.id));
                                         msg
                                     }).await {
+                                        return
+                                    }
+                                    if let Err(_) = self.mongo.add_message_to_board(message.id.0 as i64, channel as i64).await {
                                         return
                                     }
                                 }

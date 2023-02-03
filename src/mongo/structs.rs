@@ -361,3 +361,22 @@ pub struct Action {
     pub active: bool,
     pub expiry: Option<i64>
 }
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BoardMessage {
+    #[serde(rename = "messageID")]
+    pub message_id: i64,
+    #[serde(rename = "channelID")]
+    pub channel_id: i64
+}
+
+impl Borrow<BoardMessage> for mongodb::bson::Document {
+    fn borrow(&self) -> &BoardMessage {
+        let board_message = BoardMessage {
+            message_id: self.get_i64("messageID").unwrap(),
+            channel_id: self.get_i64("channelID").unwrap()
+        };
+        Box::leak(Box::new(board_message))
+    }
+}
