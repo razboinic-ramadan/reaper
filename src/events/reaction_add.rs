@@ -1,5 +1,4 @@
 use serenity::{prelude::Context, model::prelude::{Reaction, ChannelId}};
-use tracing::info;
 
 use crate::Handler;
 
