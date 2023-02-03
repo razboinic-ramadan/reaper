@@ -22,7 +22,10 @@ impl Handler {
                                     return
                                 }
                                 for rec in message.reactions {
-                                    if &rec.reaction_type.to_string() == emote && rec.count < config.quota {
+                                    if &rec.reaction_type.to_string() != emote {
+                                        return
+                                    }
+                                    if rec.count < config.quota {
                                         return
                                     }
                                     if let Ok(found) = self.mongo.check_message_on_board(message.id.0 as i64, channel as i64).await {
@@ -36,7 +39,7 @@ impl Handler {
                                     }
                                     if let Err(_) = ChannelId(channel.clone()).send_message(&ctx.http, |msg| {
                                         msg
-                                            .content(format!("`{}` by <@{}>", content, message.author.id));
+                                            .content(format!("{}\nby <@{}>", content, message.author.id));
                                         msg
                                     }).await {
                                         return
