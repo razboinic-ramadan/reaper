@@ -229,9 +229,11 @@ fn deserialize_strike_escalations<'de, D>(deserializer: D) -> Result<HashMap<u64
 }
 
 #[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct BoardConfig {
     pub emotes: Vec<String>,
-    pub quota: u64
+    pub quota: u64,
+    pub ignore_channels: Option<Vec<i64>>
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -288,7 +290,11 @@ impl Borrow<Guild> for mongodb::bson::Document {
                 boards: match self.get_document("config").unwrap().get_document("boards") {
                     Ok(boards) => Some(boards.iter().map(|(key, value)| (key.to_string(), BoardConfig {
                         emotes: value.as_document().unwrap().get_array("emotes").unwrap().iter().map(|emote| emote.as_str().unwrap().to_string()).collect(),
-                        quota: value.as_document().unwrap().get_i64("quota").unwrap() as u64
+                        quota: value.as_document().unwrap().get_i64("quota").unwrap() as u64,
+                        ignore_channels: match value.as_document().unwrap().get_array("ignoreChannels") {
+                            Ok(ignore_channels) => Some(ignore_channels.iter().map(|channel| channel.as_i64().unwrap()).collect()),
+                            Err(_) => None
+                        }
                     })).collect()),
                     Err(_) => None
                 }

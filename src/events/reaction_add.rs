@@ -15,6 +15,12 @@ impl Handler {
             Some(boards) => {
                 for (channel, config) in boards.iter() {
                     let channel = channel.parse::<u64>().unwrap();
+                    if let Some(ignored_channels) = &config.ignore_channels {
+                        let channel_i64 = channel as i64;
+                        if ignored_channels.contains(&channel_i64) {
+                            return
+                        }
+                    }
                     for emote in config.emotes.iter() {
                         if emote == &reaction.emoji.to_string() {
                             if let Ok(message) = reaction.message(&ctx.http).await {
