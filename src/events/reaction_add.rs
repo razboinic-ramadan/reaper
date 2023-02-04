@@ -45,6 +45,9 @@ impl Handler {
                                     }
                                     if let Err(_) = ChannelId(channel.clone()).send_message(&ctx.http, |msg| {
                                         msg
+                                            .allowed_mentions(|mentions| {
+                                                mentions.users([message.author.id])
+                                            })
                                             .content(format!("{}\nby <@{}>", content, message.author.id));
                                         msg
                                     }).await {
