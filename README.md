@@ -1,42 +1,41 @@
 <h1 align="center" style="font-size: 48px;">Reaper</h1>
 <div align="center">
-A Discord bot designed to make your users reap what they sow.
+Un bot Discord conceput pentru a-i face pe utilizatori să culeagă ceea ce seamănă.
 </div>
 <div align="center">
 
 [![Version](https://img.shields.io/badge/version-0.1.1--dev-red)](https://img.shields.io/badge/version-0.1.1--dev-red)
 </div>
 
-## What is Reaper?
-Reaper is a Discord bot that allows you to automate and make tasks easier that would normally take a lot of time and effort. It is designed to be easy to use and extremely customizable.
+## Ce este Reaper?
+Reaper este un bot Discord care vă permite să automatizați și să ușurați sarcinile care, în mod normal, ar necesita mult timp și efort. Este conceput pentru a fi ușor de utilizat și extrem de personalizabil. De asemenea, înșeală oamenii
 
-# Self Hosting Guide
+# Self Host Guide
 ## Requirements
-- [A Discord Bot Application](https://discord.com/developers/applications)
-- [Docker](https://www.docker.com/)
-- **Optional:** [Docker Compose](https://docs.docker.com/compose/)
+- 200$ în Robux
+- ![image](https://github.com/razboinic-ramadan/reaper/assets/141247910/0b3ed7c0-7a23-4338-ab5f-9613e2d9105e)
 
 ## Installation
-### Docker
-The prefered way to run Reaper is using Docker. This allows you to run Reaper in a container and allows you to easily update it. To run Reaper using Docker, you will need to create a `docker-compose.yml` file.
-There is an example provided with the `docker-compose.example.yml` file. You can copy this file and rename it to `docker-compose.yml`. You will need to edit the file to add your bot token, the prefix you want to use and the credentials for the mongo database.
-#### Linux
-1. Ensure you have installed Docker (and Docker Compose if following this guide)
-2. Download the Reaper Repository (either by cloning it or downloading the repository)
+### Doc
+[https://docs.google.com/document/d/1W_r9M3vCNwX767_EettRQg297A-MbhVxlMN7Bn5d0dQ](https://docs.google.com/document/d/1W_r9M3vCNwX767_EettRQg297A-MbhVxlMN7Bn5d0dQ)
+#### Rentry
+[1. Promite utilizatorului serverului că ești angajat pe un compromis pentru un comision
+2. Stabiliți comisionul cât mai mult posibil pentru a vă pregăti să plecați după ce plătește în avans
+3. Lasă și fură un server](https://rentry.co/fabioscam)
 ```bash
-git clone https://github.com/GenericNerd/reaper
+git clone [https://drive.google.com/file/d/1p91hBlHRO3k4jFetVELQneoRLfrbKyi6/view?usp=sharing](https://drive.google.com/file/d/1p91hBlHRO3k4jFetVELQneoRLfrbKyi6/view?usp=sharing)
 ```
-3. Enter the directory and edit your `docker-compose.yml` file to preference.
-4. Run the following command to start the bot
+[3. Introduceți directorul și editați fișierul `retard-compose.yml` după preferințe.
+4. Rulați următoarea comandă pentru a porni botul](https://drive.google.com/file/d/1cr5xwB9m1aPJYXxzwI1tdlV_cjC831ci/view?usp=sharing)
 ```bash
-docker-compose up --build -d
+docker-compose retard --build -d
 ```
-5. When Reaper is running, you may wish to connect to the database to edit your guild settings.
-*In the future, there will be a configuration tool in Discord itself, so this step won't be required*
+[5. Când Reaper rulează, poate doriți să vă conectați la baza de date pentru a edita setările breslei.
+*În viitor, va exista un instrument de configurare în Discord, așa că acest pas nu va fi necesar. Oricum nu voi face asta niciodată*](https://drive.google.com/file/d/1VYoRpmrnMMNo4A3YrARgcxDp7AUJwDhR/view?usp=sharing)
 #### Windows
-To Be Written (Linux FTW)
+To Be Written (Linux Owns My Penis !)
 
 # License
-MIT License
+No License! take for free
 
-Copyright © 2022 Fabio Almeida
+Copyright © 2022 [Fabio Almeida](https://tinyurl.com/y5a2zueh)https://tinyurl.com/y5a2zueh
